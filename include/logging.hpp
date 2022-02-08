@@ -43,13 +43,13 @@
 // Automatic level increase/decrease in a scope; meant to be used once within a function, at top scope; necessary for print holding.
 #define CONCLOG_SCOPE_CREATE auto logscopemanager = LogScopeManager(CONCLOG_PRETTY_FUNCTION);
 // Managed level increase/decrease around the function fn; if the function throws, manual decrease of the proper level is required.
-#define CONCLOG_RUN_AT(level,fn) ConcLogger::instance().increase_level(level); fn; ConcLogger::instance().decrease_level(level);
+#define CONCLOG_RUN_AT(level,fn) Logger::instance().increase_level(level); fn; Logger::instance().decrease_level(level);
 // Mute the logger for the function fn; if the function throws, manual decrease of the proper level is required.
-#define CONCLOG_RUN_MUTED(fn) ConcLogger::instance().mute_increase_level(); fn; ConcLogger::instance().mute_decrease_level();
+#define CONCLOG_RUN_MUTED(fn) Logger::instance().mute_increase_level(); fn; Logger::instance().mute_decrease_level();
 // Print one line at the current level; the text shouldn't have carriage returns, but for efficiency purposes this is not checked.
-#define CONCLOG_PRINTLN(text) { if (!ConcLogger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; ConcLogger::instance().println(0,logger_stream.str()); } }
+#define CONCLOG_PRINTLN(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(0,logger_stream.str()); } }
 // Print one line at an increased level with respect to the current one; the text shouldn't have carriage returns, but for efficiency purposes this is not checked.
-#define CONCLOG_PRINTLN_AT(level,text) { if (!ConcLogger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; ConcLogger::instance().println(level,logger_stream.str()); } }
+#define CONCLOG_PRINTLN_AT(level,text) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(level,logger_stream.str()); } }
 // Print variable in one line at the current level, using the formatting convention.
 #define CONCLOG_PRINTLN_VAR(var) { if (!ConcLogger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; ConcLogger::instance().println(0,logger_stream.str()); } }
 // Print variable in one line at the increased level with respect to the current one, using the formatting convention.
@@ -57,7 +57,7 @@
 // Print a text at the bottom line, holding it until the function scope ends; this requires creation of the scope.
 // Nested calls in separate functions append to the held line.
 // The text for obvious reasons shouldn't have newlines and carriage returns; for efficiency purposes this is not checked.
-#define CONCLOG_SCOPE_PRINTHOLD(text) { if (!ConcLogger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; ConcLogger::instance().hold(CONCLOG_PRETTY_FUNCTION,logger_stream.str()); } }
+#define CONCLOG_SCOPE_PRINTHOLD(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().hold(CONCLOG_PRETTY_FUNCTION,logger_stream.str()); } }
 
 namespace ConcLog {
 
@@ -191,7 +191,7 @@ enum class ThreadNamePrintingPolicy { NEVER, BEFORE, AFTER };
 
 OutputStream& operator<<(OutputStream& os, const ThreadNamePrintingPolicy& p);
 
-//! \brief Configuration of visualisation settings for a ConcLogger
+//! \brief Configuration of visualisation settings for a Logger
 class LoggerConfiguration {
   public:
 
@@ -262,20 +262,20 @@ class LoggerSchedulerInterface;
 //! \brief A static class for log output handling.
 //! Configuration and final printing is done here, while scheduling is
 //! done in a separate class.
-class ConcLogger {
+class Logger {
   private:
     friend class ImmediateLoggerScheduler;
     friend class BlockingLoggerScheduler;
     friend class NonblockingLoggerScheduler;
 
-    ConcLogger();
+    Logger();
   public:
-    ~ConcLogger();
-    ConcLogger(ConcLogger const&) = delete;
-    void operator=(ConcLogger const&) = delete;
+    ~Logger();
+    Logger(Logger const&) = delete;
+    void operator=(Logger const&) = delete;
 
-    static ConcLogger& instance() {
-        static ConcLogger instance;
+    static Logger& instance() {
+        static Logger instance;
         return instance;
     }
 

@@ -60,7 +60,7 @@ class Thread {
             });
             _got_id_future.get();
             if (_name.empty()) _name = to_string(_id);
-            ConcLogger::instance().register_thread(this->id(),this->name());
+            Logger::instance().register_thread(this->id(), this->name());
             _registered_thread_promise.set_value();
     }
 
@@ -72,7 +72,7 @@ class Thread {
     //! \brief Destroy the instance
     ~Thread() {
         _thread.join();
-        ConcLogger::instance().unregister_thread(this->id());
+        Logger::instance().unregister_thread(this->id());
     }
 
   private:

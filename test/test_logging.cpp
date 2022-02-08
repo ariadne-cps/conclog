@@ -57,19 +57,19 @@ void sample_printhold_nested_loop(std::string txt, SizeType u) {
 }
 
 void print_something1() {
-    CONCLOG_PRINTLN("This is a call from thread id " << std::this_thread::get_id() << " named '" << ConcLogger::instance().current_thread_name() << "'")
+    CONCLOG_PRINTLN("This is a call from thread id " << std::this_thread::get_id() << " named '" << Logger::instance().current_thread_name() << "'")
 }
 
 void print_something2() {
     CONCLOG_SCOPE_CREATE
-    CONCLOG_PRINTLN("This is a call from thread id " << std::this_thread::get_id() << " named '" << ConcLogger::instance().current_thread_name() << "'")
+    CONCLOG_PRINTLN("This is a call from thread id " << std::this_thread::get_id() << " named '" << Logger::instance().current_thread_name() << "'")
 }
 
 class TestLogging {
   public:
 
     TestLogging() {
-        ConcLogger::instance().configuration().set_prints_level_on_change_only(false);
+        Logger::instance().configuration().set_prints_level_on_change_only(false);
     }
 
     void test() {
@@ -103,93 +103,93 @@ class TestLogging {
     }
 
     void test_print_configuration() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
-        CONCLOG_PRINTLN(ConcLogger::instance().configuration())
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
+        CONCLOG_PRINTLN(Logger::instance().configuration())
     }
 
     void test_shown_single_print() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
         CONCLOG_PRINTLN("This is a call on level 1")
     }
 
     void test_hidden_single_print() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(0);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(0);
         CONCLOG_PRINTLN("This is a hidden call on level 1")
     }
 
     void test_muted_print() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
         CONCLOG_PRINTLN("This is the first line shown.")
         CONCLOG_RUN_MUTED(print_something1())
         CONCLOG_PRINTLN("This is the second and last line shown.")
     }
 
     void test_use_blocking_scheduler() {
-        ConcLogger::instance().use_blocking_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
         CONCLOG_PRINTLN("This is a call")
         CONCLOG_PRINTLN("This is another call")
     }
 
     void test_use_nonblocking_scheduler() {
-        ConcLogger::instance().use_nonblocking_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
+        Logger::instance().use_nonblocking_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
         CONCLOG_PRINTLN("This is a call")
         CONCLOG_PRINTLN("This is another call")
     }
 
     void test_shown_call_function_with_entrance_and_exit() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_prints_scope_entrance(true);
-        ConcLogger::instance().configuration().set_prints_scope_exit(true);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_prints_scope_entrance(true);
+        Logger::instance().configuration().set_prints_scope_exit(true);
         CONCLOG_PRINTLN("This is a call on level 1");
         CONCLOG_RUN_AT(0,sample_function());
         CONCLOG_PRINTLN("This is again a call on level 1");
     }
 
     void test_hide_call_function_with_entrance_and_exit() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_prints_scope_entrance(false);
-        ConcLogger::instance().configuration().set_prints_scope_exit(false);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_prints_scope_entrance(false);
+        Logger::instance().configuration().set_prints_scope_exit(false);
         CONCLOG_PRINTLN("This is a call on level 1");
         CONCLOG_RUN_AT(1,sample_function());
         CONCLOG_PRINTLN("This is again a call on level 1");
     }
 
     void test_indents_based_on_level() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_indents_based_on_level(true);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_indents_based_on_level(true);
         CONCLOG_PRINTLN("Call at level 1");
         CONCLOG_PRINTLN_AT(1,"Call at level 2");
-        ConcLogger::instance().configuration().set_indents_based_on_level(false);
+        Logger::instance().configuration().set_indents_based_on_level(false);
         CONCLOG_PRINTLN("Call at level 1");
         CONCLOG_PRINTLN_AT(1,"Call at level 2");
     }
 
     void test_handles_multiline_output() {
-        SizeType num_cols = ConcLogger::instance().get_window_columns();
+        SizeType num_cols = Logger::instance().get_window_columns();
         CONCLOG_PRINT_TEST_COMMENT("Number of window columns: " << num_cols)
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_handles_multiline_output(true);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_handles_multiline_output(true);
         CONCLOG_PRINTLN("<begin>" << std::string(num_cols,' ') << "<end>")
-        ConcLogger::instance().configuration().set_handles_multiline_output(false);
+        Logger::instance().configuration().set_handles_multiline_output(false);
         CONCLOG_PRINTLN("<begin>" << std::string(num_cols,' ') << "<end>")
     }
 
     void test_discards_newlines_and_indentation() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_discards_newlines_and_indentation(true);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_discards_newlines_and_indentation(true);
         CONCLOG_PRINTLN("This text should just be in a single line \n       with no extra whitespaces.");
-        ConcLogger::instance().configuration().set_discards_newlines_and_indentation(false);
+        Logger::instance().configuration().set_discards_newlines_and_indentation(false);
         CONCLOG_PRINTLN("This text should be in two lines\n          where the second one starts several whitespaces in.");
     }
 
@@ -204,19 +204,19 @@ class TestLogging {
     }
 
     void test_hold_line() {
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().use_immediate_scheduler();
         _hold_short_line();
-        ConcLogger::instance().use_blocking_scheduler();
+        Logger::instance().use_blocking_scheduler();
         _hold_short_line();
-        ConcLogger::instance().use_nonblocking_scheduler();
+        Logger::instance().use_nonblocking_scheduler();
         _hold_short_line();
     }
 
     void test_hold_line_with_newline_println() {
-        ConcLogger::instance().use_immediate_scheduler();
+        Logger::instance().use_immediate_scheduler();
         CONCLOG_SCOPE_CREATE;
-        ConcLogger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_verbosity(2);
         ProgressIndicator indicator(10.0);
         for (unsigned int i=0; i<10; ++i) {
             indicator.update_current(i);
@@ -227,10 +227,10 @@ class TestLogging {
     }
 
     void test_hold_long_line() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
         CONCLOG_SCOPE_CREATE;
-        SizeType num_cols = ConcLogger::instance().get_window_columns();
+        SizeType num_cols = Logger::instance().get_window_columns();
 
         std::string exactly_str(num_cols-4,'x'); // exactly the length required to fill the columns (given a prefix of 4 chars)
         std::string larger_str(num_cols,'x'); // larger enough
@@ -249,8 +249,8 @@ class TestLogging {
     }
 
     void test_hold_multiple() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(4);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(4);
         CONCLOG_SCOPE_CREATE;
         SizeType u=30;
         for (unsigned int i=0; i<3; ++i) {
@@ -261,20 +261,20 @@ class TestLogging {
     }
 
     void test_light_theme() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_LIGHT);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_theme(TT_THEME_LIGHT);
         std::clog << TT_THEME_LIGHT << std::endl;
         CONCLOG_PRINTLN("This is a call on level 1")
         CONCLOG_RUN_AT(0,sample_function())
         CONCLOG_PRINTLN("This is again a call on level 1")
-        ConcLogger::instance().configuration().set_theme(TT_THEME_NONE);
+        Logger::instance().configuration().set_theme(TT_THEME_NONE);
     }
 
     void test_dark_theme() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(2);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
         std::clog << TT_THEME_DARK << std::endl;
         CONCLOG_PRINTLN("This is a call on level 1")
         CONCLOG_RUN_AT(0,sample_function())
@@ -282,17 +282,17 @@ class TestLogging {
     }
 
     void test_theme_custom_keyword() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
-        ConcLogger::instance().configuration().add_custom_keyword("first");
-        ConcLogger::instance().configuration().add_custom_keyword("second",TT_STYLE_DARKORANGE);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().configuration().add_custom_keyword("first");
+        Logger::instance().configuration().add_custom_keyword("second", TT_STYLE_DARKORANGE);
         CONCLOG_PRINTLN("This is a default first, a styled second, an ignored secondsecond and msecond and second1 and 1second and firstsecond but not ignored [second and second]")
     }
 
     void test_theme_bgcolor_bold_underline() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
         std::list<TerminalTextStyle> styles;
         styles.push_back(TerminalTextStyle(0,0,true,false));
         styles.push_back(TerminalTextStyle(0,0,false,true));
@@ -309,14 +309,14 @@ class TestLogging {
     }
 
     void test_redirect() {
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(1);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
         CONCLOG_PRINTLN("This is call 1");
-        ConcLogger::instance().redirect_to_file("log.txt");
+        Logger::instance().redirect_to_file("log.txt");
         CONCLOG_PRINTLN("This is call 2");
         CONCLOG_PRINTLN("This is call 3");
-        ConcLogger::instance().redirect_to_console();
+        Logger::instance().redirect_to_console();
         CONCLOG_PRINTLN("This is call 4");
         CONCLOG_PRINTLN("This is call 5");
 
@@ -334,28 +334,28 @@ class TestLogging {
     }
 
     void test_multiple_threads_with_blocking_scheduler() {
-        ConcLogger::instance().use_blocking_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(3);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
-        CONCLOG_PRINTLN("Printing on the " << ConcLogger::instance().current_thread_name() << " thread without other threads");
-        CONCLOG_TEST_EQUALS(ConcLogger::instance().cached_last_printed_thread_name().compare("main"),0);
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_verbosity(3);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+        CONCLOG_PRINTLN("Printing on the " << Logger::instance().current_thread_name() << " thread without other threads");
+        CONCLOG_TEST_EQUALS(Logger::instance().cached_last_printed_thread_name().compare("main"), 0);
         Thread thread1([] { print_something1(); },"thr1");
         Thread thread2([] { print_something2(); },"thr2");
         CONCLOG_PRINTLN("Printing again on the main thread, but with other threads");
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        CONCLOG_TEST_PRINT(ConcLogger::instance().cached_last_printed_thread_name());
-        CONCLOG_TEST_ASSERT(ConcLogger::instance().cached_last_printed_thread_name().compare("thr1") == 0 or
-                                    ConcLogger::instance().cached_last_printed_thread_name().compare("thr2") == 0);
+        CONCLOG_TEST_PRINT(Logger::instance().cached_last_printed_thread_name());
+        CONCLOG_TEST_ASSERT(Logger::instance().cached_last_printed_thread_name().compare("thr1") == 0 or
+                            Logger::instance().cached_last_printed_thread_name().compare("thr2") == 0);
     }
 
     void test_multiple_threads_with_nonblocking_scheduler() {
-        ConcLogger::instance().use_nonblocking_scheduler();
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
-        ConcLogger::instance().configuration().set_verbosity(3);
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+        Logger::instance().use_nonblocking_scheduler();
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().configuration().set_verbosity(3);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
 
-        CONCLOG_PRINTLN("Printing on the " << ConcLogger::instance().current_thread_name() << " thread without other threads");
+        CONCLOG_PRINTLN("Printing on the " << Logger::instance().current_thread_name() << " thread without other threads");
         Thread thread1([] { print_something1(); });
         Thread thread2([] { print_something1(); });
         Thread thread3([] { print_something1(); });
@@ -367,37 +367,37 @@ class TestLogging {
     }
 
     void test_register_self_thread() {
-        ConcLogger::instance().use_blocking_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(3);
-        ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
-        CONCLOG_PRINTLN("Printing on the " << ConcLogger::instance().current_thread_name() << " thread without other threads");
-        CONCLOG_TEST_EQUALS(ConcLogger::instance().cached_last_printed_thread_name().compare("main"),0);
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_verbosity(3);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+        CONCLOG_PRINTLN("Printing on the " << Logger::instance().current_thread_name() << " thread without other threads");
+        CONCLOG_TEST_EQUALS(Logger::instance().cached_last_printed_thread_name().compare("main"), 0);
         std::thread::id thread_id;
-        std::thread thread1([&thread_id] { thread_id = std::this_thread::get_id(); ConcLogger::instance().register_self_thread("thr1",1); print_something1(); });
+        std::thread thread1([&thread_id] { thread_id = std::this_thread::get_id(); Logger::instance().register_self_thread("thr1", 1); print_something1(); });
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         thread1.join();
-        ConcLogger::instance().unregister_thread(thread_id);
+        Logger::instance().unregister_thread(thread_id);
     }
 
     void test_printing_policy_with_theme_and_print_level(bool use_theme, bool print_level) {
         CONCLOG_PRINT_TEST_COMMENT("Policies: " << ThreadNamePrintingPolicy::BEFORE << " " << ThreadNamePrintingPolicy::AFTER << " " << ThreadNamePrintingPolicy::NEVER)
-        ConcLogger::instance().use_immediate_scheduler();
-        ConcLogger::instance().use_blocking_scheduler();
-        ConcLogger::instance().configuration().set_verbosity(3);
-        if (use_theme) ConcLogger::instance().configuration().set_theme(TT_THEME_DARK);
-        else ConcLogger::instance().configuration().set_theme(TT_THEME_NONE);
-        ConcLogger::instance().configuration().set_prints_level_on_change_only(print_level);
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_verbosity(3);
+        if (use_theme) Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        else Logger::instance().configuration().set_theme(TT_THEME_NONE);
+        Logger::instance().configuration().set_prints_level_on_change_only(print_level);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
         Thread thread1([] { print_something1(); },"thr1");
         CONCLOG_PRINTLN("Printing thread name before");
         CONCLOG_PRINTLN("Printing thread name before again");
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::AFTER);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::AFTER);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         Thread thread2([] { print_something1(); },"thr2");
         CONCLOG_PRINTLN("Printing thread name after");
         CONCLOG_PRINTLN("Printing thread name after again");
-        ConcLogger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         CONCLOG_PRINTLN("Printing thread name never");
         Thread thread3([] { print_something1(); },"thr3");

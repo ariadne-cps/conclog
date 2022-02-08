@@ -149,9 +149,9 @@ private:
 LogScopeManager::LogScopeManager(std::string scope, unsigned int level_increase)
     : _scope(scope), _level_increase(level_increase)
 {
-    ConcLogger::instance().increase_level(_level_increase);
-    if ((!ConcLogger::instance().is_muted_at(0)) and ConcLogger::instance().configuration().prints_scope_entrance()) {
-        ConcLogger::instance().println(0,"Enters '"+this->scope()+"'");
+    Logger::instance().increase_level(_level_increase);
+    if ((!Logger::instance().is_muted_at(0)) and Logger::instance().configuration().prints_scope_entrance()) {
+        Logger::instance().println(0,"Enters '"+this->scope()+"'");
     }
 }
 
@@ -160,11 +160,11 @@ std::string LogScopeManager::scope() const {
 }
 
 LogScopeManager::~LogScopeManager() {
-    if ((!ConcLogger::instance().is_muted_at(0)) and ConcLogger::instance().configuration().prints_scope_exit()) {
-        ConcLogger::instance().println(0,"Exits '"+this->scope()+"'");
+    if ((!Logger::instance().is_muted_at(0)) and Logger::instance().configuration().prints_scope_exit()) {
+        Logger::instance().println(0,"Exits '"+this->scope()+"'");
     }
-    ConcLogger::instance().decrease_level(_level_increase);
-    ConcLogger::instance().release(this->scope());
+    Logger::instance().decrease_level(_level_increase);
+    Logger::instance().release(this->scope());
 }
 
 LogThinRawMessage::LogThinRawMessage(std::string scope_, unsigned int level_, std::string text_) :
@@ -245,7 +245,7 @@ class LoggerSchedulerInterface {
     virtual ~LoggerSchedulerInterface() = default;
 };
 
-//! \brief A ConcLogger scheduler that prints immediately. Not designed for concurrency, since
+//! \brief A Logger scheduler that prints immediately. Not designed for concurrency, since
 //! the current level should be different for each thread that prints. Also the outputs can overlap arbitrarily.
 class ImmediateLoggerScheduler : public LoggerSchedulerInterface {
   public:
@@ -265,7 +265,7 @@ class ImmediateLoggerScheduler : public LoggerSchedulerInterface {
     unsigned int _current_level;
 };
 
-//! \brief A ConcLogger scheduler that enqueues messages and prints them sequentially.
+//! \brief A Logger scheduler that enqueues messages and prints them sequentially.
 //! The order of printing respects the order of submission, thus blocking other submitters.
 class BlockingLoggerScheduler : public LoggerSchedulerInterface {
   public:
@@ -287,7 +287,7 @@ class BlockingLoggerScheduler : public LoggerSchedulerInterface {
     std::mutex _data_mutex;
 };
 
-//! \brief A ConcLogger scheduler that enqueues messages and prints them in a dedicated thread.
+//! \brief A Logger scheduler that enqueues messages and prints them in a dedicated thread.
 //! The order of printing is respected only within a given thread.
 class NonblockingLoggerScheduler : public LoggerSchedulerInterface {
   public:
@@ -349,21 +349,21 @@ void ImmediateLoggerScheduler::decrease_level(unsigned int i) {
 }
 
 void ImmediateLoggerScheduler::println(unsigned int level_increase, std::string text) {
-    ConcLogger::instance()._println(LogRawMessage(std::string(), _current_level + level_increase, text));
+    Logger::instance()._println(LogRawMessage(std::string(), _current_level + level_increase, text));
 }
 
 void ImmediateLoggerScheduler::hold(std::string scope, std::string text) {
-    ConcLogger::instance()._hold(LogRawMessage(scope, _current_level, text));
+    Logger::instance()._hold(LogRawMessage(scope, _current_level, text));
 }
 
 void ImmediateLoggerScheduler::release(std::string scope) {
-    ConcLogger::instance()._release(LogRawMessage(scope, _current_level, std::string()));
+    Logger::instance()._release(LogRawMessage(scope, _current_level, std::string()));
 }
 
 void ImmediateLoggerScheduler::terminate() { }
 
 BlockingLoggerScheduler::BlockingLoggerScheduler() {
-    _data.insert({std::this_thread::get_id(),std::make_pair(1,ConcLogger::_MAIN_THREAD_NAME)});
+    _data.insert({std::this_thread::get_id(),std::make_pair(1,Logger::_MAIN_THREAD_NAME)});
 }
 
 void BlockingLoggerScheduler::create_data_instance(std::thread::id id, std::string name) {
@@ -408,17 +408,17 @@ void BlockingLoggerScheduler::decrease_level(unsigned int i) {
 
 void BlockingLoggerScheduler::println(unsigned int level_increase, std::string text) {
     std::lock_guard<std::mutex> lock(_data_mutex);
-    ConcLogger::instance()._println(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, std::string(), _data.find(std::this_thread::get_id())->second.first + level_increase, text));
+    Logger::instance()._println(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, std::string(), _data.find(std::this_thread::get_id())->second.first + level_increase, text));
 }
 
 void BlockingLoggerScheduler::hold(std::string scope, std::string text) {
     std::lock_guard<std::mutex> lock(_data_mutex);
-    ConcLogger::instance()._hold(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, text));
+    Logger::instance()._hold(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, text));
 }
 
 void BlockingLoggerScheduler::release(std::string scope) {
     std::lock_guard<std::mutex> lock(_data_mutex);
-    ConcLogger::instance()._release(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, std::string()));
+    Logger::instance()._release(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, std::string()));
 }
 
 void BlockingLoggerScheduler::terminate() { }
@@ -426,7 +426,7 @@ void BlockingLoggerScheduler::terminate() { }
 NonblockingLoggerScheduler::NonblockingLoggerScheduler() : _terminate(false), _no_alive_thread_registered(true), _termination_future(_termination_promise.get_future()) {
     {
         std::lock_guard<std::mutex> lock(_data_mutex);
-        _data.insert({std::this_thread::get_id(),SharedPointer<LoggerData>(new LoggerData(1,ConcLogger::_MAIN_THREAD_NAME))});
+        _data.insert({std::this_thread::get_id(),SharedPointer<LoggerData>(new LoggerData(1,Logger::_MAIN_THREAD_NAME))});
     }
     _dequeueing_thread = std::make_shared<MessageConsumptionThread>([=,this] { _consume_msgs(); });
 }
@@ -450,7 +450,7 @@ void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::s
     std::lock_guard<std::mutex> lock(_data_mutex);
     // Won't replace if it already exists
     _data.insert({id,SharedPointer<LoggerData>(new LoggerData(level,name))});
-    if (name != ConcLogger::_MAIN_THREAD_NAME) {
+    if (name != Logger::_MAIN_THREAD_NAME) {
         _no_alive_thread_registered = false;
         _message_availability_condition.notify_one();
     }
@@ -469,7 +469,7 @@ void NonblockingLoggerScheduler::kill_data_instance(std::thread::id id) {
 
 bool NonblockingLoggerScheduler::_are_alive_threads_registered() const {
     for (auto d : _data)
-        if (d.second->thread_name() != ConcLogger::_MAIN_THREAD_NAME and not d.second->is_dead()) return true;
+        if (d.second->thread_name() != Logger::_MAIN_THREAD_NAME and not d.second->is_dead()) return true;
     return false;
 }
 
@@ -547,9 +547,9 @@ void NonblockingLoggerScheduler::_consume_msgs() {
         auto msg = _dequeue();
         switch (msg.kind()) {
             default : [[fallthrough]];
-            case RawMessageKind::PRINTLN : ConcLogger::instance()._println(msg); break;
-            case RawMessageKind::HOLD : ConcLogger::instance()._hold(msg); break;
-            case RawMessageKind::RELEASE : ConcLogger::instance()._release(msg); break;
+            case RawMessageKind::PRINTLN : Logger::instance()._println(msg); break;
+            case RawMessageKind::HOLD : Logger::instance()._hold(msg); break;
+            case RawMessageKind::RELEASE : Logger::instance()._release(msg); break;
         }
     }
 }
@@ -571,7 +571,7 @@ LoggerConfiguration::LoggerConfiguration() :
         _theme(TT_THEME_NONE)
 { }
 
-LoggerConfiguration& ConcLogger::configuration() {
+LoggerConfiguration& Logger::configuration() {
     return _configuration;
 }
 
@@ -674,118 +674,118 @@ OutputStream& operator<<(OutputStream& os, LoggerConfiguration const& c) {
     return os;
 }
 
-ConcLogger::ConcLogger() :
+Logger::Logger() :
     _cached_num_held_columns(0), _cached_last_printed_level(0), _cached_last_printed_thread_name(std::string()),
     _scheduler(std::make_shared<NonblockingLoggerScheduler>()) { }
 
-const std::string ConcLogger::_MAIN_THREAD_NAME = "main";
-const unsigned int ConcLogger::_MUTE_LEVEL_OFFSET = 1024;
+const std::string Logger::_MAIN_THREAD_NAME = "main";
+const unsigned int Logger::_MUTE_LEVEL_OFFSET = 1024;
 
-ConcLogger::~ConcLogger() {
+Logger::~Logger() {
     //TaskManager::instance().set_concurrency(0); // It's necessary that all threads in the TaskManager static object unregister before terminating
     _scheduler->terminate();
 }
 
-void ConcLogger::use_immediate_scheduler() {
+void Logger::use_immediate_scheduler() {
     //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
     /*else */ _scheduler->terminate();
     _scheduler.reset(new ImmediateLoggerScheduler());
 }
 
-void ConcLogger::use_blocking_scheduler() {
+void Logger::use_blocking_scheduler() {
     //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
     /*else*/ _scheduler->terminate();
     _scheduler.reset(new BlockingLoggerScheduler());
 }
 
-void ConcLogger::use_nonblocking_scheduler() {
+void Logger::use_nonblocking_scheduler() {
     //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
     /*else*/ _scheduler->terminate();
     _scheduler.reset(new NonblockingLoggerScheduler());
 }
 
-void ConcLogger::redirect_to_console() {
+void Logger::redirect_to_console() {
     if(_redirect_file.is_open()) _redirect_file.close();
     std::clog.rdbuf(_default_streambuf);
 }
 
-void ConcLogger::redirect_to_file(const char* filename) {
+void Logger::redirect_to_file(const char* filename) {
     if(_redirect_file.is_open()) _redirect_file.close();
     _redirect_file.open(filename);
     _default_streambuf = std::clog.rdbuf();
     std::clog.rdbuf( _redirect_file.rdbuf() );
 }
 
-void ConcLogger::register_thread(std::thread::id id, std::string name) {
+void Logger::register_thread(std::thread::id id, std::string name) {
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->create_data_instance(id,name);
     else if (bls != nullptr) bls->create_data_instance(id,name);
 }
 
-void ConcLogger::register_self_thread(std::string name, unsigned int level) {
+void Logger::register_self_thread(std::string name, unsigned int level) {
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->create_data_instance(std::this_thread::get_id(),name,level);
     else if (bls != nullptr) bls->create_data_instance(std::this_thread::get_id(),name,level);
 }
 
-void ConcLogger::unregister_thread(std::thread::id id) {
+void Logger::unregister_thread(std::thread::id id) {
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->kill_data_instance(id);
     else if (bls != nullptr) bls->kill_data_instance(id);
 }
 
-void ConcLogger::increase_level(unsigned int i) {
+void Logger::increase_level(unsigned int i) {
     _scheduler->increase_level(i);
 }
 
-void ConcLogger::decrease_level(unsigned int i) {
+void Logger::decrease_level(unsigned int i) {
     _scheduler->decrease_level(i);
 }
 
-void ConcLogger::mute_increase_level() {
+void Logger::mute_increase_level() {
     _scheduler->increase_level(_MUTE_LEVEL_OFFSET);
 }
 
-void ConcLogger::mute_decrease_level() {
+void Logger::mute_decrease_level() {
     _scheduler->decrease_level(_MUTE_LEVEL_OFFSET);
 }
 
-bool ConcLogger::is_muted_at(unsigned int i) const {
+bool Logger::is_muted_at(unsigned int i) const {
     return (_configuration.verbosity() < current_level()+i);
 }
 
-unsigned int ConcLogger::current_level() const {
+unsigned int Logger::current_level() const {
     return _scheduler->current_level();
 }
 
-std::string ConcLogger::current_thread_name() const {
+std::string Logger::current_thread_name() const {
     return _scheduler->current_thread_name();
 }
 
-std::string ConcLogger::cached_last_printed_thread_name() const {
+std::string Logger::cached_last_printed_thread_name() const {
     return _cached_last_printed_thread_name;
 }
 
-void ConcLogger::println(unsigned int level_increase, std::string text) {
+void Logger::println(unsigned int level_increase, std::string text) {
     _scheduler->println(level_increase, text);
 }
 
-void ConcLogger::hold(std::string scope, std::string text) {
+void Logger::hold(std::string scope, std::string text) {
     _scheduler->hold(scope, text);
 }
 
-void ConcLogger::release(std::string scope) {
+void Logger::release(std::string scope) {
     _scheduler->release(scope);
 }
 
-bool ConcLogger::_is_holding() const {
+bool Logger::_is_holding() const {
     return !_current_held_stack.empty();
 }
 
-bool ConcLogger::_can_print_thread_name() const {
+bool Logger::_can_print_thread_name() const {
     auto sch = dynamic_cast<ImmediateLoggerScheduler*>(_scheduler.get());
     // Only if we don't use an immediate scheduler and we have the right printing policy
     if (sch == nullptr and _configuration.thread_name_printing_policy() != ThreadNamePrintingPolicy::NEVER)
@@ -793,7 +793,7 @@ bool ConcLogger::_can_print_thread_name() const {
     else return false;
 }
 
-unsigned int ConcLogger::get_window_columns() const {
+unsigned int Logger::get_window_columns() const {
     const unsigned int DEFAULT_COLUMNS = 80;
     const unsigned int MAX_COLUMNS = 512;
     #ifndef _WIN32
@@ -805,7 +805,7 @@ unsigned int ConcLogger::get_window_columns() const {
     #endif
 }
 
-std::string ConcLogger::_apply_theme(std::string const& text) const {
+std::string Logger::_apply_theme(std::string const& text) const {
     auto theme = _configuration.theme();
     if (theme.has_style()) {
         std::ostringstream ss;
@@ -906,7 +906,7 @@ bool isalphanumeric_withstylecodes(std::string text, size_t pos) {
     } else return true;
 }
 
-std::string ConcLogger::_apply_theme_for_keywords(std::string const& text) const {
+std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
     std::string result = text;
     std::map<std::string,TerminalTextStyle> keyword_styles = {{"virtual",_configuration.theme().keyword},
                                                               {"const",_configuration.theme().keyword},
@@ -938,7 +938,7 @@ std::string ConcLogger::_apply_theme_for_keywords(std::string const& text) const
     return result;
 }
 
-void ConcLogger::_print_preamble_for_firstline(unsigned int level, std::string thread_name) {
+void Logger::_print_preamble_for_firstline(unsigned int level, std::string thread_name) {
     auto theme = _configuration.theme();
     bool can_print_thread_name = _can_print_thread_name();
     bool thread_name_changed = (_cached_last_printed_thread_name != thread_name);
@@ -976,7 +976,7 @@ void ConcLogger::_print_preamble_for_firstline(unsigned int level, std::string t
     if (_configuration.indents_based_on_level()) std::clog << std::string(level, ' ');
 }
 
-void ConcLogger::_print_preamble_for_extralines(unsigned int level) {
+void Logger::_print_preamble_for_extralines(unsigned int level) {
     auto theme = _configuration.theme();
     std::clog << (level>9 ? "  " : " ");
     if (_can_print_thread_name()) std::clog << std::string(_scheduler->largest_thread_name_size() + 1, ' ');
@@ -986,7 +986,7 @@ void ConcLogger::_print_preamble_for_extralines(unsigned int level) {
     if (_configuration.indents_based_on_level()) std::clog << std::string(level, ' ');
 }
 
-std::string ConcLogger::_discard_newlines_and_indentation(std::string const& text) {
+std::string Logger::_discard_newlines_and_indentation(std::string const& text) {
     std::ostringstream result;
     size_t text_ptr = 0;
     while(true) {
@@ -1007,7 +1007,7 @@ std::string ConcLogger::_discard_newlines_and_indentation(std::string const& tex
     return result.str();
 }
 
-void ConcLogger::_print_held_line() {
+void Logger::_print_held_line() {
     auto theme = _configuration.theme();
     const unsigned int max_columns = get_window_columns();
     unsigned int held_columns = 0;
@@ -1038,14 +1038,14 @@ void ConcLogger::_print_held_line() {
     std::this_thread::sleep_for(std::chrono::microseconds(10<<_cached_last_printed_level));
 }
 
-void ConcLogger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) {
+void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) {
     if (_is_holding()) {
         if (_cached_num_held_columns > printed_columns)
             std::clog << std::string(_cached_num_held_columns - printed_columns, ' ');
     }
 }
 
-void ConcLogger::_println(LogRawMessage const& msg) {
+void Logger::_println(LogRawMessage const& msg) {
     const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(_scheduler->largest_thread_name_size()+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
@@ -1109,7 +1109,7 @@ void ConcLogger::_println(LogRawMessage const& msg) {
     _cached_last_printed_thread_name = msg.identifier;
 }
 
-void ConcLogger::_hold(LogRawMessage const& msg) {
+void Logger::_hold(LogRawMessage const& msg) {
     bool scope_found = false;
     for (unsigned int idx=0; idx<_current_held_stack.size(); ++idx) {
         if (_current_held_stack[idx].scope == msg.scope) { _current_held_stack[idx] = msg; scope_found = true; break; } }
@@ -1117,7 +1117,7 @@ void ConcLogger::_hold(LogRawMessage const& msg) {
     _print_held_line();
 }
 
-void ConcLogger::_release(LogRawMessage const& msg) {
+void Logger::_release(LogRawMessage const& msg) {
     if (_is_holding()) {
         bool found = false;
         unsigned int i=0;
