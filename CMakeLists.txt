@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.9)
 
 project(ConcLog VERSION 1.0)
 
+option(COVERAGE "Enable coverage reporting" OFF)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.20)
         message(FATAL_ERROR "MSVC version must be at least 19.20!")
@@ -20,6 +22,8 @@ endif()
 
 if(WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    set(LIBRARY_KIND STATIC)
+elseif(COVERAGE)
     set(LIBRARY_KIND STATIC)
 else()
     set(LIBRARY_KIND SHARED)	
@@ -58,7 +62,6 @@ if(NOT TARGET conclog)
 
     if(NOT TARGET tests)
 
-        option(COVERAGE "Enable coverage reporting" OFF)
         if(COVERAGE)
             message(STATUS "Enabled coverage reporting")
             target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
