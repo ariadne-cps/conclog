@@ -3,7 +3,7 @@
 # ConcLog
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT) [![Unix Status](https://github.com/ariadne-cps/conclog/workflows/Unix/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/unix.yml)
-[![Unix Status](https://github.com/ariadne-cps/conclog/workflows/Windows/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/windows.yml) [![codecov](https://codecov.io/gh/ariadne-cps/opera/branch/main/graph/badge.svg)](https://codecov.io/gh/ariadne-cps/conclog)
+[![Windows Status](https://github.com/ariadne-cps/conclog/workflows/Windows/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/windows.yml) [![codecov](https://codecov.io/gh/ariadne-cps/conclog/branch/main/graph/badge.svg)](https://codecov.io/gh/ariadne-cps/conclog)
 
 ConcLog is a library for concurrent logging.
 It features the following:
