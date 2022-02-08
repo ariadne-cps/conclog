@@ -40,6 +40,6 @@ The library is meant to be used as a dependency, in particular by disabling test
 
 ## Contribution guidelines ##
 
-If you would like to contribute to Opera, please contact the developer: 
+If you would like to contribute to ConcLog, please contact the developer: 
 
 * Luca Geretti <luca.geretti@univr.it>
