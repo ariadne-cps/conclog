@@ -54,16 +54,6 @@ CONCLOG_check(std::ostream& os, const R& r, const ER& er) {
 //The value is used and updated in the next two macro definitions
 int test_case_counter = 0;
 
-#if defined(linux) || defined(__linux) || defined(__linux__)
-#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
-#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#define CONCLOG_PRETTY_FUNCTION __FUNCSIG__
-#elif defined(darwin) || defined(__darwin) || defined(__darwin__) || defined(__APPLE__)
-#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
-#else
-#define CONCLOG_PRETTY_FUNCTION ""
-#endif
-
 /*! \brief Tests a class function */
 #define CONCLOG_TEST_CLASS(classname,testclassconstruct)                       \
     { \

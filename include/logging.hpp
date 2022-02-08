@@ -40,6 +40,16 @@
 #include <thread>
 #include <mutex>
 
+#if defined(linux) || defined(__linux) || defined(__linux__)
+#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#define CONCLOG_PRETTY_FUNCTION __FUNCSIG__
+#elif defined(darwin) || defined(__darwin) || defined(__darwin__) || defined(__APPLE__)
+#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#else
+#define CONCLOG_PRETTY_FUNCTION ""
+#endif
+
 // Automatic level increase/decrease in a scope; meant to be used once within a function, at top scope; necessary for print holding.
 #define CONCLOG_SCOPE_CREATE auto logscopemanager = LogScopeManager(CONCLOG_PRETTY_FUNCTION);
 // Managed level increase/decrease around the function fn; if the function throws, manual decrease of the proper level is required.
@@ -51,9 +61,9 @@
 // Print one line at an increased level with respect to the current one; the text shouldn't have carriage returns, but for efficiency purposes this is not checked.
 #define CONCLOG_PRINTLN_AT(level,text) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(level,logger_stream.str()); } }
 // Print variable in one line at the current level, using the formatting convention.
-#define CONCLOG_PRINTLN_VAR(var) { if (!ConcLogger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; ConcLogger::instance().println(0,logger_stream.str()); } }
+#define CONCLOG_PRINTLN_VAR(var) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(0,logger_stream.str()); } }
 // Print variable in one line at the increased level with respect to the current one, using the formatting convention.
-#define CONCLOG_PRINTLN_VAR_AT(level,var) { if (!ConcLogger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; ConcLogger::instance().println(level,logger_stream.str()); } }
+#define CONCLOG_PRINTLN_VAR_AT(level,var) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(level,logger_stream.str()); } }
 // Print a text at the bottom line, holding it until the function scope ends; this requires creation of the scope.
 // Nested calls in separate functions append to the held line.
 // The text for obvious reasons shouldn't have newlines and carriage returns; for efficiency purposes this is not checked.
