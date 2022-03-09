@@ -39,6 +39,7 @@
 #include <sstream>
 #include <thread>
 #include <mutex>
+#include <memory>
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
 #define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
