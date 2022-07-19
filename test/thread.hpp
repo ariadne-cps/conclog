@@ -52,7 +52,7 @@ class Thread {
     Thread(std::function<void()> const& task, std::string const& name = std::string())
         : _name(name), _got_id_future(_got_id_promise.get_future()), _registered_thread_future(_registered_thread_promise.get_future())
     {
-            _thread = std::thread([=,this]() {
+            _thread = std::thread([this, task]() {
                 _id = std::this_thread::get_id();
                 _got_id_promise.set_value();
                 _registered_thread_future.get();

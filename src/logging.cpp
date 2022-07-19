@@ -46,7 +46,7 @@ namespace ConcLog {
 class MessageConsumptionThread {
   public:
     MessageConsumptionThread(std::function<void()> task) : _started_future(_started_promise.get_future()) {
-        _thread = std::thread([=, this]() { _started_promise.set_value(); task(); });
+        _thread = std::thread([this, task]() { _started_promise.set_value(); task(); });
         _started_future.get();
     }
     ~MessageConsumptionThread() {  _thread.join(); }
@@ -428,7 +428,7 @@ NonblockingLoggerScheduler::NonblockingLoggerScheduler() : _terminate(false), _n
         std::lock_guard<std::mutex> lock(_data_mutex);
         _data.insert({std::this_thread::get_id(),SharedPointer<LoggerData>(new LoggerData(1,Logger::_MAIN_THREAD_NAME))});
     }
-    _dequeueing_thread = std::make_shared<MessageConsumptionThread>([=,this] { _consume_msgs(); });
+    _dequeueing_thread = std::make_shared<MessageConsumptionThread>([this] { _consume_msgs(); });
 }
 
 void NonblockingLoggerScheduler::terminate() {
@@ -542,7 +542,7 @@ LogRawMessage NonblockingLoggerScheduler::_dequeue() {
 void NonblockingLoggerScheduler::_consume_msgs() {
     while(true) {
         std::unique_lock<std::mutex> lock(_message_availability_mutex);
-        _message_availability_condition.wait(lock, [=, this] { return (_terminate and _no_alive_thread_registered) or not _is_queue_empty(); });
+        _message_availability_condition.wait(lock, [this] { return (_terminate and _no_alive_thread_registered) or not _is_queue_empty(); });
         if (_terminate and _no_alive_thread_registered and _is_queue_empty()) { _termination_promise.set_value(); return; }
         auto msg = _dequeue();
         switch (msg.kind()) {
