@@ -65,14 +65,25 @@ void print_something2() {
     CONCLOG_PRINTLN("This is a call from thread id " << std::this_thread::get_id() << " named '" << Logger::instance().current_thread_name() << "'")
 }
 
-class TestLogging {
+class ThreadRegistry : public ThreadRegistryInterface {
   public:
+    ThreadRegistry() : _threads_registered(0) { }
+    bool has_threads_registered() const override { return _threads_registered > 0; }
+    void set_threads_registered(unsigned int threads_registered) { _threads_registered = threads_registered; }
+  private:
+    unsigned int _threads_registered;
+};
 
+class TestLogging {
+  private:
+    ThreadRegistry _registry;
+  public:
     TestLogging() {
         Logger::instance().configuration().set_prints_level_on_change_only(false);
     }
 
     void test() {
+        CONCLOG_TEST_CALL(test_thread_registry())
         CONCLOG_TEST_CALL(test_print_configuration())
         CONCLOG_TEST_CALL(test_shown_single_print())
         CONCLOG_TEST_CALL(test_hidden_single_print())
@@ -100,6 +111,21 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_printing_policy_with_theme_and_print_level(true,false))
         CONCLOG_TEST_CALL(test_printing_policy_with_theme_and_print_level(false,false))
         CONCLOG_TEST_CALL(test_printing_policy_with_theme_and_print_level(false,true))
+    }
+
+    void test_thread_registry() {
+        CONCLOG_TEST_FAIL(Logger::instance().use_immediate_scheduler())
+        CONCLOG_TEST_FAIL(Logger::instance().use_blocking_scheduler())
+        CONCLOG_TEST_FAIL(Logger::instance().use_nonblocking_scheduler())
+        Logger::instance().attach_thread_registry(&_registry);
+        CONCLOG_TEST_EXECUTE(Logger::instance().use_immediate_scheduler())
+        CONCLOG_TEST_EXECUTE(Logger::instance().use_blocking_scheduler())
+        CONCLOG_TEST_EXECUTE(Logger::instance().use_nonblocking_scheduler())
+        _registry.set_threads_registered(1);
+        CONCLOG_TEST_FAIL(Logger::instance().use_immediate_scheduler())
+        CONCLOG_TEST_FAIL(Logger::instance().use_blocking_scheduler())
+        CONCLOG_TEST_FAIL(Logger::instance().use_nonblocking_scheduler())
+        _registry.set_threads_registered(0);
     }
 
     void test_print_configuration() {

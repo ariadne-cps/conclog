@@ -41,6 +41,8 @@
 #include <mutex>
 #include <memory>
 
+#include "thread_registry_interface.hpp"
+
 #if defined(linux) || defined(__linux) || defined(__linux__)
 #define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
@@ -76,6 +78,10 @@ using OutputStream = std::ostream;
 template<class T> using SharedPointer = std::shared_ptr<T>;
 using SizeType = size_t;
 
+//! \brief Exception for trying to use threaded functionality with no attached thread registry
+class LoggerNoThreadRegistryException : public std::exception { };
+//! \brief Exception for trying to modify the thread registry, which should be immutable as soon as attached
+class LoggerModifyThreadRegistryException : public std::exception { };
 //! \brief Exception for trying to change the scheduler while there are registered threads
 class LoggerSchedulerChangeWithRegisteredThreadsException : public std::exception { };
 
@@ -290,6 +296,9 @@ class Logger {
         return instance;
     }
 
+    //! \brief Attach a thread registry, necessary to modify the scheduler and register/unregister
+    void attach_thread_registry(ThreadRegistryInterface* registry);
+
     void use_immediate_scheduler();
     void use_blocking_scheduler();
     void use_nonblocking_scheduler();
@@ -346,6 +355,7 @@ class Logger {
     unsigned int _cached_last_printed_level;
     std::string _cached_last_printed_thread_name;
     std::shared_ptr<LoggerSchedulerInterface> _scheduler;
+    ThreadRegistryInterface* _thread_registry;
     LoggerConfiguration _configuration;
 };
 
