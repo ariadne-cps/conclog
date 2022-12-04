@@ -298,6 +298,8 @@ class Logger {
 
     //! \brief Attach a thread registry, necessary to modify the scheduler and register/unregister
     void attach_thread_registry(ThreadRegistryInterface* registry);
+    //! \brief Check whether there is already a thread registry attached
+    bool has_thread_registry_attached() const;
 
     void use_immediate_scheduler();
     void use_blocking_scheduler();
