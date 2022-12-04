@@ -682,25 +682,32 @@ const std::string Logger::_MAIN_THREAD_NAME = "main";
 const unsigned int Logger::_MUTE_LEVEL_OFFSET = 1024;
 
 Logger::~Logger() {
-    //TaskManager::instance().set_concurrency(0); // It's necessary that all threads in the TaskManager static object unregister before terminating
     _scheduler->terminate();
 }
 
+void Logger::attach_thread_registry(ThreadRegistryInterface* registry) {
+    if (_thread_registry != nullptr) throw LoggerModifyThreadRegistryException();
+    _thread_registry = registry;
+}
+
 void Logger::use_immediate_scheduler() {
-    //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    /*else */ _scheduler->terminate();
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
+    if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
+    else _scheduler->terminate();
     _scheduler.reset(new ImmediateLoggerScheduler());
 }
 
 void Logger::use_blocking_scheduler() {
-    //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    /*else*/ _scheduler->terminate();
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
+    if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
+    else _scheduler->terminate();
     _scheduler.reset(new BlockingLoggerScheduler());
 }
 
 void Logger::use_nonblocking_scheduler() {
-    //if (TaskManager::instance().concurrency() > 0) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    /*else*/ _scheduler->terminate();
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
+    if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
+    else _scheduler->terminate();
     _scheduler.reset(new NonblockingLoggerScheduler());
 }
 
@@ -717,6 +724,7 @@ void Logger::redirect_to_file(const char* filename) {
 }
 
 void Logger::register_thread(std::thread::id id, std::string name) {
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->create_data_instance(id,name);
@@ -724,6 +732,7 @@ void Logger::register_thread(std::thread::id id, std::string name) {
 }
 
 void Logger::register_self_thread(std::string name, unsigned int level) {
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->create_data_instance(std::this_thread::get_id(),name,level);
@@ -731,6 +740,7 @@ void Logger::register_self_thread(std::string name, unsigned int level) {
 }
 
 void Logger::unregister_thread(std::thread::id id) {
+    if (_thread_registry == nullptr) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
     if (nbls != nullptr) nbls->kill_data_instance(id);
