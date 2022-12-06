@@ -3,5 +3,6 @@ add_library(CONCLOG_SRC OBJECT
 )
 
 if(COVERAGE)
-    target_link_libraries(CONCLOG_SRC coverage_config)
+    include(CodeCoverage)
+    append_coverage_compiler_flags()
 endif()

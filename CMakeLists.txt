@@ -4,6 +4,8 @@ project(ConcLog VERSION 1.0)
 
 option(COVERAGE "Enable coverage reporting" OFF)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.20)
         message(FATAL_ERROR "MSVC version must be at least 19.20!")
@@ -63,21 +65,11 @@ if(NOT TARGET conclog)
     add_library(conclog ${LIBRARY_KIND} $<TARGET_OBJECTS:CONCLOG_SRC>)
     target_link_libraries(conclog ${CMAKE_THREAD_LIBS_INIT})
 
-    if(NOT TARGET coverage_config)
-        add_library(coverage_config INTERFACE)
-    endif()
-
     if(NOT TARGET tests)
 
         if(COVERAGE)
-            message(STATUS "Enabled coverage reporting")
-            target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
-            if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-                target_link_options(coverage_config INTERFACE --coverage)
-            else()
-                target_link_libraries(coverage_config INTERFACE --coverage)
-            endif()
-            target_link_libraries(conclog coverage_config)
+            include(CodeCoverage)
+            append_coverage_compiler_flags()
         endif()
 
         enable_testing()
