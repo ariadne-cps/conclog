@@ -24,11 +24,6 @@ jobs:
             cxx: "clang++"
           }
           - {
-            name: "macOS 15 GCC 14 [Release]",
-            os: macos-15,
-            cxx: "g++-14"
-          }
-          - {
             name: "Ubuntu 24.04 Clang 16 [Release]",
             os: ubuntu-24.04,
             cxx: "clang++-16"
@@ -59,7 +54,7 @@ jobs:
     - name: Set Up macOS Dependencies
       if: runner.os == 'macOS'
       run: |
-        brew install ninja gcc@14
+        brew install ninja
         export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
 
     - name: Set Up Linux Dependencies
