@@ -16,8 +16,8 @@ jobs:
       matrix:
         config:
           - {
-            name: "Windows Server 2019 [Release]",
-            os: windows-2019,
+            name: "Windows 2025 [Release]",
+            os: windows-2025,
             build-type: "Release"
           }
     steps:

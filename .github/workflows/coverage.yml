@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v3
@@ -19,14 +19,14 @@ jobs:
       run: echo NPROC="nproc" >> $GITHUB_ENV
 
     - name: Set Up Dependencies
-      run: sudo apt install -y cmake ninja-build pkg-config lcov clang-11 g++-10
+      run: sudo apt install -y cmake ninja-build pkg-config lcov clang-16 g++-13
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
-      run: cmake ${{runner.workspace}}/conclog -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++-10 -G "Ninja" -DCOVERAGE=ON
+      run: cmake ${{runner.workspace}}/conclog -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++-13 -G "Ninja" -DCOVERAGE=ON
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
