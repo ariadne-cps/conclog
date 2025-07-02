@@ -20,12 +20,12 @@ jobs:
         config:
           - {
             name: "macOS 15 AppleClang [Release]",
-            os: macos-15.0,
+            os: macos-15,
             cxx: "clang++"
           }
           - {
             name: "macOS 15 GCC 12 [Release]",
-            os: macos-15.0,
+            os: macos-15,
             cxx: "g++-12"
           }
           - {
@@ -64,7 +64,7 @@ jobs:
 
     - name: Set Up Linux Dependencies
       if: runner.os == 'Linux'
-      run: sudo apt install -y cmake ninja-build pkg-config clang-11 g++-10
+      run: sudo apt install -y cmake ninja-build pkg-config clang-16 g++-12
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
