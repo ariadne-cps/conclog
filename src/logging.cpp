@@ -818,6 +818,7 @@ std::string Logger::current_thread_name() const {
 }
 
 std::string Logger::cached_last_printed_thread_name() const {
+    std::lock_guard<std::mutex> lock(_output_mutex);
     return _cached_last_printed_thread_name;
 }
 
@@ -1098,6 +1099,7 @@ void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) 
 }
 
 void Logger::_println(LogRawMessage const& msg) {
+    std::lock_guard<std::mutex> lock(_output_mutex);
     const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(_scheduler->largest_thread_name_size()+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
@@ -1162,6 +1164,7 @@ void Logger::_println(LogRawMessage const& msg) {
 }
 
 void Logger::_hold(LogRawMessage const& msg) {
+    std::lock_guard<std::mutex> lock(_output_mutex);
     bool scope_found = false;
     for (unsigned int idx=0; idx<_current_held_stack.size(); ++idx) {
         if (_current_held_stack[idx].scope == msg.scope) { _current_held_stack[idx] = msg; scope_found = true; break; } }
@@ -1170,6 +1173,7 @@ void Logger::_hold(LogRawMessage const& msg) {
 }
 
 void Logger::_release(LogRawMessage const& msg) {
+    std::lock_guard<std::mutex> lock(_output_mutex);
     if (_is_holding()) {
         bool found = false;
         unsigned int i=0;

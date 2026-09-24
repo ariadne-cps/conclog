@@ -352,6 +352,7 @@ class Logger {
     static const std::string _MAIN_THREAD_NAME;
     std::ofstream _redirect_file;
     std::basic_streambuf<char>* _default_streambuf;
+    mutable std::mutex _output_mutex;
     std::vector<LogRawMessage> _current_held_stack;
     unsigned int _cached_num_held_columns;
     unsigned int _cached_last_printed_level;
