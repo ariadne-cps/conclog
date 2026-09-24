@@ -95,6 +95,7 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_parser_branch_boundaries())
         CONCLOG_TEST_CALL(test_scheduler_noop_registration_paths())
         CONCLOG_TEST_CALL(test_hold_release_missing_scope())
+        CONCLOG_TEST_CALL(test_remaining_branch_boundaries())
         CONCLOG_TEST_CALL(test_window_columns())
         CONCLOG_TEST_CALL(test_shown_single_print())
         CONCLOG_TEST_CALL(test_hidden_single_print())
@@ -229,6 +230,52 @@ class TestLogging {
         Logger::instance().release("coverage-existing");
         // Release while nothing is held.
         Logger::instance().release("coverage-empty");
+    }
+
+    void test_remaining_branch_boundaries() {
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(20);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+
+        // Empty text makes the RHS of "handles_multiline && text.size()>0"
+        // false while multiline handling itself remains enabled.
+        Logger::instance().configuration().set_handles_multiline_output(true);
+        CONCLOG_PRINTLN("")
+
+        // Number parser: digit at begin(), and a second digit whose predecessor
+        // is begin(), cover the two iterator boundary branches.
+        CONCLOG_PRINTLN("1 12")
+
+        // Keyword boundary at end of the string makes kw_pos+length == size.
+        CONCLOG_PRINTLN("edge")
+
+        // Exercise styled-keyword adjacency where the preceding character is
+        // alphabetic before an ANSI reset sequence.
+        CONCLOG_PRINTLN("A" << TT_STYLE_DARKORANGE() << "x" << TerminalTextStyle::RESET << "edge")
+
+        // Extraline preamble with indentation disabled.
+        Logger::instance().configuration().set_indents_based_on_level(false);
+        CONCLOG_PRINTLN("first\nsecond")
+        Logger::instance().configuration().set_indents_based_on_level(true);
+
+        // For a level > 9, same level and same thread with level-on-change,
+        // exercise the hidden two-column level branch.
+        Logger::instance().configuration().set_prints_level_on_change_only(true);
+        Logger::instance().increase_level(9);
+        CONCLOG_PRINTLN("same-high-level")
+        CONCLOG_PRINTLN("same-high-level-again")
+        Logger::instance().decrease_level(9);
+        Logger::instance().configuration().set_prints_level_on_change_only(false);
+
+        // Exactly max_columns+1 held columns: level 1 contributes four columns,
+        // therefore 77 text characters reach the second equality condition
+        // for the default 80-column non-TTY test environment.
+        Logger::instance().configuration().set_theme(TT_THEME_NONE);
+        Logger::instance().hold("coverage-exact-held",std::string(77,'x'));
+        Logger::instance().release("coverage-exact-held");
+
+        // redirect_to_console() when no redirect file is open.
+        Logger::instance().redirect_to_console();
     }
 
     void test_window_columns() {
