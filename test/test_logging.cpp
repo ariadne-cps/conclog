@@ -201,11 +201,18 @@ class TestLogging {
         CONCLOG_PRINTLN(".1 a. a1 11a 111")
         CONCLOG_PRINTLN("edge edgeA Aedge [edge]")
 
-        // Style-code keyword adjacency: styled alphanumeric text before a
-        // keyword forces isalphanumeric_withstylecodes() through its ESC path.
-        CONCLOG_PRINTLN(TT_STYLE_DARKORANGE() << "A" << TerminalTextStyle::RESET << "edge")
-        CONCLOG_PRINTLN("m edge")
-        CONCLOG_PRINTLN("Am" << TerminalTextStyle::RESET << "edge")
+        // Use a theme that styles keywords only, so the characters immediately
+        // preceding "edge" reach isalphanumeric_withstylecodes() unchanged.
+        TerminalTextTheme keyword_only_theme;
+        keyword_only_theme.keyword = TT_STYLE_DARKORANGE;
+        Logger::instance().configuration().set_theme(keyword_only_theme);
+
+        // c == 'm' with pos <= 3.
+        CONCLOG_PRINTLN("medge")
+        // Non-alphanumeric predecessor: !isalpha(c) is true and isdigit(c) is false.
+        CONCLOG_PRINTLN("[edge]")
+        // Reset-code path with an alphabetic character immediately before ESC[0m.
+        CONCLOG_PRINTLN("A" << TerminalTextStyle::RESET << "edge")
     }
 
     void test_scheduler_noop_registration_paths() {
