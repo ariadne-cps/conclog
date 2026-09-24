@@ -27,6 +27,12 @@
  */
 
 #include <list>
+#include <array>
+#ifndef _WIN32
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#endif
 #include "thread.hpp"
 #include "logging.hpp"
 #include "progress_indicator.hpp"
@@ -85,6 +91,8 @@ class TestLogging {
     void test() {
         CONCLOG_TEST_CALL(test_thread_registry())
         CONCLOG_TEST_CALL(test_print_configuration())
+        CONCLOG_TEST_CALL(test_style_branch_combinations())
+        CONCLOG_TEST_CALL(test_window_columns())
         CONCLOG_TEST_CALL(test_shown_single_print())
         CONCLOG_TEST_CALL(test_hidden_single_print())
         CONCLOG_TEST_CALL(test_muted_print())
@@ -142,6 +150,77 @@ class TestLogging {
         std::ostringstream invalid_policy;
         invalid_policy << static_cast<ThreadNamePrintingPolicy>(255);
         CONCLOG_TEST_EQUALS(invalid_policy.str().compare("NEVER"), 0);
+    }
+
+    void test_style_branch_combinations() {
+        CONCLOG_TEST_ASSERT(!TT_STYLE_NONE.is_styled());
+        CONCLOG_TEST_ASSERT(TerminalTextStyle(1,0,false,false).is_styled());
+        CONCLOG_TEST_ASSERT(TerminalTextStyle(0,1,false,false).is_styled());
+        CONCLOG_TEST_ASSERT(TerminalTextStyle(0,0,true,false).is_styled());
+        CONCLOG_TEST_ASSERT(TerminalTextStyle(0,0,false,true).is_styled());
+
+        using ThemeField = TerminalTextStyle TerminalTextTheme::*;
+        const std::array<ThemeField,14> fields = {
+            &TerminalTextTheme::level_number,
+            &TerminalTextTheme::level_shown_separator,
+            &TerminalTextTheme::level_hidden_separator,
+            &TerminalTextTheme::multiline_separator,
+            &TerminalTextTheme::assignment_comparison,
+            &TerminalTextTheme::miscellaneous_operator,
+            &TerminalTextTheme::round_parentheses,
+            &TerminalTextTheme::square_parentheses,
+            &TerminalTextTheme::curly_parentheses,
+            &TerminalTextTheme::colon,
+            &TerminalTextTheme::comma,
+            &TerminalTextTheme::number,
+            &TerminalTextTheme::at,
+            &TerminalTextTheme::keyword
+        };
+
+        CONCLOG_TEST_ASSERT(!TT_THEME_NONE.has_style());
+        for (auto field : fields) {
+            TerminalTextTheme theme;
+            theme.*field = TerminalTextStyle(1,0,false,false);
+            CONCLOG_TEST_ASSERT(theme.has_style());
+        }
+    }
+
+    void test_window_columns() {
+#ifndef _WIN32
+        int master_fd = posix_openpt(O_RDWR);
+        CONCLOG_TEST_ASSERT(master_fd >= 0);
+        if (master_fd < 0) return;
+        CONCLOG_TEST_EQUALS(grantpt(master_fd),0);
+        CONCLOG_TEST_EQUALS(unlockpt(master_fd),0);
+        char* slave_name = ptsname(master_fd);
+        CONCLOG_TEST_ASSERT(slave_name != nullptr);
+        if (slave_name == nullptr) { close(master_fd); return; }
+
+        int slave_fd = open(slave_name,O_RDWR);
+        CONCLOG_TEST_ASSERT(slave_fd >= 0);
+        if (slave_fd < 0) { close(master_fd); return; }
+
+        int saved_stdout = dup(STDOUT_FILENO);
+        CONCLOG_TEST_ASSERT(saved_stdout >= 0);
+        if (saved_stdout < 0) { close(slave_fd); close(master_fd); return; }
+
+        struct winsize ws {};
+        ws.ws_col = 123;
+        CONCLOG_TEST_EQUALS(ioctl(slave_fd,TIOCSWINSZ,&ws),0);
+        CONCLOG_TEST_EQUALS(dup2(slave_fd,STDOUT_FILENO),STDOUT_FILENO);
+        CONCLOG_TEST_EQUALS(Logger::instance().get_window_columns(),123u);
+
+        ws.ws_col = 600;
+        CONCLOG_TEST_EQUALS(ioctl(slave_fd,TIOCSWINSZ,&ws),0);
+        CONCLOG_TEST_EQUALS(Logger::instance().get_window_columns(),80u);
+
+        CONCLOG_TEST_EQUALS(dup2(saved_stdout,STDOUT_FILENO),STDOUT_FILENO);
+        close(saved_stdout);
+        close(slave_fd);
+        close(master_fd);
+#else
+        CONCLOG_TEST_EQUALS(Logger::instance().get_window_columns(),80u);
+#endif
     }
 
     void test_shown_single_print() {
@@ -253,6 +332,12 @@ class TestLogging {
 
         Logger::instance().configuration().set_prints_level_on_change_only(false);
         Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
+
+        Logger::instance().configuration().set_handles_multiline_output(false);
+        Logger::instance().hold("coverage-final-reprint","held-final");
+        CONCLOG_PRINTLN("single-line while held")
+        Logger::instance().release("coverage-final-reprint");
+        Logger::instance().configuration().set_handles_multiline_output(true);
     }
 
     void test_handles_multiline_output() {
