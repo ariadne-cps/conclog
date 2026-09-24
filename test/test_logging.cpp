@@ -92,6 +92,9 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_thread_registry())
         CONCLOG_TEST_CALL(test_print_configuration())
         CONCLOG_TEST_CALL(test_style_branch_combinations())
+        CONCLOG_TEST_CALL(test_parser_branch_boundaries())
+        CONCLOG_TEST_CALL(test_scheduler_noop_registration_paths())
+        CONCLOG_TEST_CALL(test_hold_release_missing_scope())
         CONCLOG_TEST_CALL(test_window_columns())
         CONCLOG_TEST_CALL(test_shown_single_print())
         CONCLOG_TEST_CALL(test_hidden_single_print())
@@ -183,6 +186,49 @@ class TestLogging {
             theme.*field = TerminalTextStyle(1,0,false,false);
             CONCLOG_TEST_ASSERT(theme.has_style());
         }
+    }
+
+    void test_parser_branch_boundaries() {
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(1);
+        Logger::instance().configuration().set_theme(TT_THEME_DARK);
+        Logger::instance().configuration().add_custom_keyword("edge");
+
+        // Exercise operator cases and parser boundaries that are otherwise
+        // semantically equivalent but distinct branches in llvm-cov.
+        CONCLOG_PRINTLN("! / \\ | & %")
+        CONCLOG_PRINTLN(".1 a. a1 11a 111")
+        CONCLOG_PRINTLN("edge edgeA Aedge [edge]")
+
+        // Style-code keyword adjacency: styled alphanumeric text before a
+        // keyword forces isalphanumeric_withstylecodes() through its ESC path.
+        CONCLOG_PRINTLN(TT_STYLE_DARKORANGE() << "A" << TerminalTextStyle::RESET << "edge")
+    }
+
+    void test_scheduler_noop_registration_paths() {
+        Logger::instance().use_immediate_scheduler();
+        // Registration is intentionally a no-op for the immediate scheduler.
+        Logger::instance().register_thread(std::this_thread::get_id(),"ignored");
+        Logger::instance().register_self_thread("ignored",1);
+        Logger::instance().unregister_thread(std::this_thread::get_id());
+
+        Logger::instance().use_blocking_scheduler();
+        // Unknown ids exercise the not-found branches without changing state.
+        Logger::instance().unregister_thread(std::thread::id());
+
+        Logger::instance().use_nonblocking_scheduler();
+        Logger::instance().unregister_thread(std::thread::id());
+        Logger::instance().use_blocking_scheduler();
+    }
+
+    void test_hold_release_missing_scope() {
+        Logger::instance().use_immediate_scheduler();
+        Logger::instance().configuration().set_verbosity(2);
+        Logger::instance().hold("coverage-existing","held");
+        Logger::instance().release("coverage-missing");
+        Logger::instance().release("coverage-existing");
+        // Release while nothing is held.
+        Logger::instance().release("coverage-empty");
     }
 
     void test_window_columns() {
