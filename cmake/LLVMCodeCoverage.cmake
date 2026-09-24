@@ -67,6 +67,7 @@ function(setup_target_for_coverage_llvm)
     set(PROFDATA_FILE "${PROJECT_BINARY_DIR}/coverage/coverage.profdata")
     set(LCOV_FILE "${PROJECT_BINARY_DIR}/coverage.info")
     set(HTML_DIR "${PROJECT_BINARY_DIR}/coverage/html")
+    set(BRANCH_REPORT_FILE "${PROJECT_BINARY_DIR}/coverage/branches.txt")
     set(MERGE_SCRIPT "${PROJECT_BINARY_DIR}/merge-llvm-coverage.cmake")
     set(EXPORT_SCRIPT "${PROJECT_BINARY_DIR}/export-llvm-coverage.cmake")
 
@@ -120,6 +121,15 @@ endif()
                 ${LLVM_COV_FILTER_ARGS}
                 ${Coverage_SOURCES}
         COMMAND "${CMAKE_COMMAND}" -P "${EXPORT_SCRIPT}"
+        COMMAND "${LLVM_COV_EXECUTABLE}" show
+                "$<TARGET_FILE:${Coverage_TARGET}>"
+                ${LLVM_COV_OBJECT_ARGS}
+                "-instr-profile=${PROFDATA_FILE}"
+                "-show-branches=count"
+                "-show-line-counts-or-regions"
+                ${LLVM_COV_FILTER_ARGS}
+                ${Coverage_SOURCES}
+                > "${BRANCH_REPORT_FILE}"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${HTML_DIR}"
         COMMAND "${LLVM_COV_EXECUTABLE}" show
                 "$<TARGET_FILE:${Coverage_TARGET}>"
@@ -140,5 +150,7 @@ endif()
                 "LLVM coverage LCOV report: ${LCOV_FILE}"
         COMMAND "${CMAKE_COMMAND}" -E echo
                 "LLVM coverage HTML report: ${HTML_DIR}/index.html"
+        COMMAND "${CMAKE_COMMAND}" -E echo
+                "LLVM branch detail report: ${BRANCH_REPORT_FILE}"
     )
 endfunction()
