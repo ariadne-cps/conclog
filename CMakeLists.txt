@@ -97,7 +97,7 @@ if(NOT TARGET conclog)
         endif()
 
         if(COVERAGE)
-        if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
+            if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
             setup_target_for_coverage_llvm(
                 NAME coverage
                 TARGET conclog
@@ -109,13 +109,12 @@ if(NOT TARGET conclog)
                     "${PROJECT_SOURCE_DIR}/src"
             )
         else()
-            setup_target_for_coverage_gcc(
-                NAME coverage
-                DEPENDENCIES tests
-            )
+                setup_target_for_coverage_gcc(
+                    NAME coverage
+                    DEPENDENCIES tests
+                )
+            endif()
         endif()
-    endif()
-
     endif()
 
 endif()
