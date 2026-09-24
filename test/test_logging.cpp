@@ -132,6 +132,10 @@ class TestLogging {
         Logger::instance().use_immediate_scheduler();
         Logger::instance().configuration().set_verbosity(1);
         CONCLOG_PRINTLN(Logger::instance().configuration())
+
+        std::ostringstream invalid_policy;
+        invalid_policy << static_cast<ThreadNamePrintingPolicy>(255);
+        CONCLOG_TEST_EQUALS(invalid_policy.str().compare("NEVER"), 0);
     }
 
     void test_shown_single_print() {
@@ -304,7 +308,7 @@ class TestLogging {
         std::clog << TT_THEME_DARK << std::endl;
         CONCLOG_PRINTLN("This is a call on level 1")
         CONCLOG_RUN_AT(0,sample_function())
-        CONCLOG_PRINTLN("This is again a call on level 1")
+        CONCLOG_PRINTLN("This is again a call on level 1 + 2 - 3")
     }
 
     void test_theme_custom_keyword() {
