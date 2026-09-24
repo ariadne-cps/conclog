@@ -124,7 +124,7 @@ int main() {
     }
 
     const std::string configuration_filename = "configuration_race.log";
-    constexpr unsigned int CONFIG_MESSAGES = 200;
+    constexpr unsigned int CONFIG_MESSAGES = 500;
 
     Logger::instance().use_nonblocking_scheduler();
     Logger::instance().redirect_to_file(configuration_filename.c_str());
