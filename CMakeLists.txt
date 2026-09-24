@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.15)
 project(ConcLog VERSION 1.0)
 
 option(COVERAGE "Enable coverage reporting" OFF)
+option(THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
+
+if(COVERAGE AND THREAD_SANITIZER)
+    message(FATAL_ERROR "COVERAGE and THREAD_SANITIZER cannot be enabled together.")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -16,6 +21,14 @@ if(COVERAGE)
     else()
         message(FATAL_ERROR "Coverage is supported only with GCC or macOS AppleClang/Clang.")
     endif()
+endif()
+
+if(THREAD_SANITIZER)
+    if(WIN32 OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "ThreadSanitizer is supported only with GCC or Clang on Unix-like systems.")
+    endif()
+    add_compile_options(-fsanitize=thread -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=thread)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

@@ -2,6 +2,7 @@ include(CTest)
 
 set(UNIT_TESTS
     test_logging
+    test_concurrency
 )
 
 foreach(TEST ${UNIT_TESTS})
