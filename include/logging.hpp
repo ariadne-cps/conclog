@@ -338,7 +338,7 @@ class Logger {
     std::string _apply_theme(std::string const& text) const;
     std::string _apply_theme_for_keywords(std::string const& text) const;
     void _print_preamble_for_firstline(unsigned int level, std::string thread_name);
-    void _print_preamble_for_extralines(unsigned int level);
+    void _print_preamble_for_extralines(unsigned int level, SizeType thread_name_size);
     std::string _discard_newlines_and_indentation(std::string const& text);
     void _cover_held_columns_with_whitespaces(unsigned int printed_columns);
     void _print_held_line();
