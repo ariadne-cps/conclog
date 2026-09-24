@@ -958,7 +958,7 @@ std::string Logger::_apply_theme(std::string const& text) const {
                     if (it != text.begin()) {
                         if (isalpha(*(it - 1)))
                             styled = false;
-                        else if (isdigit(*(it - 1)) and (it - 1) != text.begin() and isalpha(*(it - 2)))
+                        else if (isdigit(*(it - 1)) and isalpha(*(it - 2)))
                             styled = false;
                     }
                     if (styled) ss << theme.number() << c << TerminalTextStyle::RESET;
@@ -987,13 +987,16 @@ std::string Logger::_apply_theme(std::string const& text) const {
 bool isalphanumeric_withstylecodes(std::string text, size_t pos) {
     auto c = text.at(pos);
     if (not isalpha(c) and not isdigit(c)) return false;
-    if (c != 'm' or pos <= 3) return true;
+    if (c != 'm') return true;
+    if (pos <= 3) return true;
 
     auto sub = text.substr(pos-3,3);
     // A reset code ends with ESC[0m. In that case adjacency is determined by
     // the character immediately preceding the four-byte reset sequence.
-    if (sub == "\u001b[0")
-        return isalpha(text.at(pos-4)) or isdigit(text.at(pos-4));
+    if (sub == "\u001b[0") {
+        auto preceding = text.at(pos-4);
+        return isalpha(preceding) or isdigit(preceding);
+    }
     return true;
 }
 
