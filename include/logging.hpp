@@ -39,6 +39,7 @@
 #include <sstream>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
 #include <memory>
 
 #include "thread_registry_interface.hpp"
@@ -358,6 +359,7 @@ class Logger {
     unsigned int _cached_num_held_columns;
     unsigned int _cached_last_printed_level;
     std::string _cached_last_printed_thread_name;
+    mutable std::shared_mutex _scheduler_mutex;
     std::shared_ptr<LoggerSchedulerInterface> _scheduler;
     ThreadRegistryInterface* _thread_registry;
     LoggerConfiguration _configuration;
