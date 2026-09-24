@@ -90,12 +90,13 @@ if(NOT TARGET conclog)
     add_library(conclog ${LIBRARY_KIND} $<TARGET_OBJECTS:CONCLOG_SRC>)
     target_link_libraries(conclog ${CMAKE_THREAD_LIBS_INIT})
 
-    if(NOT TARGET tests)
-        enable_testing()
-        add_subdirectory(test)
-    endif()
+    if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+        if(NOT TARGET tests)
+            enable_testing()
+            add_subdirectory(test)
+        endif()
 
-    if(COVERAGE)
+        if(COVERAGE)
         if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
             setup_target_for_coverage_llvm(
                 NAME coverage
@@ -113,6 +114,8 @@ if(NOT TARGET conclog)
                 DEPENDENCIES tests
             )
         endif()
+    endif()
+
     endif()
 
 endif()
