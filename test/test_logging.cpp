@@ -93,6 +93,7 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_shown_call_function_with_entrance_and_exit())
         CONCLOG_TEST_CALL(test_hide_call_function_with_entrance_and_exit())
         CONCLOG_TEST_CALL(test_indents_based_on_level())
+        CONCLOG_TEST_CALL(test_high_level_multiline_hold())
         CONCLOG_TEST_CALL(test_hold_line())
         CONCLOG_TEST_CALL(test_hold_line_with_newline_println())
         CONCLOG_TEST_CALL(test_hold_long_line())
@@ -117,7 +118,11 @@ class TestLogging {
         CONCLOG_TEST_FAIL(Logger::instance().use_immediate_scheduler())
         CONCLOG_TEST_FAIL(Logger::instance().use_blocking_scheduler())
         CONCLOG_TEST_FAIL(Logger::instance().use_nonblocking_scheduler())
+        CONCLOG_TEST_FAIL(Logger::instance().register_thread(std::this_thread::get_id(),"no-registry"))
+        CONCLOG_TEST_FAIL(Logger::instance().register_self_thread("no-registry",1))
+        CONCLOG_TEST_FAIL(Logger::instance().unregister_thread(std::this_thread::get_id()))
         Logger::instance().attach_thread_registry(&_registry);
+        CONCLOG_TEST_FAIL(Logger::instance().attach_thread_registry(&_registry))
         CONCLOG_TEST_EXECUTE(Logger::instance().use_immediate_scheduler())
         CONCLOG_TEST_EXECUTE(Logger::instance().use_blocking_scheduler())
         CONCLOG_TEST_EXECUTE(Logger::instance().use_nonblocking_scheduler())
@@ -201,6 +206,25 @@ class TestLogging {
         Logger::instance().configuration().set_indents_based_on_level(false);
         CONCLOG_PRINTLN("Call at level 1");
         CONCLOG_PRINTLN_AT(1,"Call at level 2");
+    }
+
+    void test_high_level_multiline_hold() {
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_theme(TT_THEME_NONE);
+        Logger::instance().configuration().set_verbosity(20);
+        Logger::instance().configuration().set_handles_multiline_output(true);
+        Logger::instance().configuration().set_indents_based_on_level(true);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+
+        Logger::instance().increase_level(9);
+        Logger::instance().hold("coverage-high-level","held");
+        CONCLOG_PRINTLN("first line\nsecond line")
+        SizeType num_cols = Logger::instance().get_window_columns();
+        CONCLOG_PRINTLN(std::string(num_cols+10,'x') << "\nlast")
+        Logger::instance().release("coverage-high-level");
+        Logger::instance().decrease_level(9);
+
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
     }
 
     void test_handles_multiline_output() {
@@ -343,6 +367,7 @@ class TestLogging {
         Logger::instance().configuration().set_verbosity(1);
         Logger::instance().configuration().set_theme(TT_THEME_DARK);
         CONCLOG_PRINTLN("This is call 1");
+        Logger::instance().redirect_to_file("log.txt");
         Logger::instance().redirect_to_file("log.txt");
         CONCLOG_PRINTLN("This is call 2");
         CONCLOG_PRINTLN("This is call 3");
