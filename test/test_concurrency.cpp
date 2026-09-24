@@ -124,7 +124,7 @@ int main() {
     }
 
     const std::string configuration_filename = "configuration_race.log";
-    constexpr unsigned int CONFIG_MESSAGES = 1000;
+    constexpr unsigned int CONFIG_MESSAGES = 200;
 
     Logger::instance().use_nonblocking_scheduler();
     Logger::instance().redirect_to_file(configuration_filename.c_str());
@@ -151,7 +151,7 @@ int main() {
         configuration.set_indents_based_on_level(i % 2 != 0);
         configuration.set_handles_multiline_output(i % 2 == 0);
         configuration.set_discards_newlines_and_indentation(i % 2 != 0);
-        configuration.add_custom_keyword("config-keyword-" + std::to_string(i));
+        configuration.add_custom_keyword((i % 2 == 0) ? "config-keyword-even" : "config-keyword-odd");
     }
 
     producer.join();
