@@ -284,7 +284,7 @@ class BlockingLoggerScheduler : public LoggerSchedulerInterface {
     void terminate() override;
   private:
     std::map<std::thread::id,std::pair<unsigned int,std::string>> _data;
-    std::mutex _data_mutex;
+    mutable std::mutex _data_mutex;
 };
 
 //! \brief A Logger scheduler that enqueues messages and prints them in a dedicated thread.
@@ -306,13 +306,12 @@ class NonblockingLoggerScheduler : public LoggerSchedulerInterface {
     void terminate() override;
     ~NonblockingLoggerScheduler() override;
   private:
-    //! \brief Extracts one message from the largest queue
-    LogRawMessage _dequeue();
+    //! \brief Extracts one message from the largest queue. Requires _data_mutex to be held.
+    LogRawMessage _dequeue_unlocked();
     void _consume_msgs();
-    bool _is_queue_empty() const;
-    bool _are_alive_threads_registered() const;
+    bool _is_queue_empty_unlocked() const;
+    bool _are_alive_threads_registered_unlocked() const;
  private:
-    std::mutex _message_availability_mutex;
     std::condition_variable _message_availability_condition;
     mutable std::mutex _data_mutex;
 
@@ -383,14 +382,17 @@ void BlockingLoggerScheduler::kill_data_instance(std::thread::id id) {
 }
 
 unsigned int BlockingLoggerScheduler::current_level() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     return _data.find(std::this_thread::get_id())->second.first;
 }
 
 std::string BlockingLoggerScheduler::current_thread_name() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     return _data.find(std::this_thread::get_id())->second.second;
 }
 
 SizeType BlockingLoggerScheduler::largest_thread_name_size() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     SizeType result = 0;
     for (auto entry : _data) result = std::max(result,entry.second.second.size());
     return result;
@@ -407,18 +409,33 @@ void BlockingLoggerScheduler::decrease_level(unsigned int i) {
 }
 
 void BlockingLoggerScheduler::println(unsigned int level_increase, std::string text) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    Logger::instance()._println(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, std::string(), _data.find(std::this_thread::get_id())->second.first + level_increase, text));
+    LogRawMessage msg(std::string(), 0, std::string());
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        auto const& data = _data.find(std::this_thread::get_id())->second;
+        msg = LogRawMessage(data.second, std::string(), data.first + level_increase, text);
+    }
+    Logger::instance()._println(msg);
 }
 
 void BlockingLoggerScheduler::hold(std::string scope, std::string text) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    Logger::instance()._hold(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, text));
+    LogRawMessage msg(std::string(), 0, std::string());
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        auto const& data = _data.find(std::this_thread::get_id())->second;
+        msg = LogRawMessage(data.second, scope, data.first, text);
+    }
+    Logger::instance()._hold(msg);
 }
 
 void BlockingLoggerScheduler::release(std::string scope) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    Logger::instance()._release(LogRawMessage(_data.find(std::this_thread::get_id())->second.second, scope, _data.find(std::this_thread::get_id())->second.first, std::string()));
+    LogRawMessage msg(std::string(), 0, std::string());
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        auto const& data = _data.find(std::this_thread::get_id())->second;
+        msg = LogRawMessage(data.second, scope, data.first, std::string());
+    }
+    Logger::instance()._release(msg);
 }
 
 void BlockingLoggerScheduler::terminate() { }
@@ -433,10 +450,10 @@ NonblockingLoggerScheduler::NonblockingLoggerScheduler() : _terminate(false), _n
 
 void NonblockingLoggerScheduler::terminate() {
     {
-        std::unique_lock<std::mutex> lock(_message_availability_mutex);
+        std::lock_guard<std::mutex> lock(_data_mutex);
         _terminate = true;
-        _message_availability_condition.notify_one();
     }
+    _message_availability_condition.notify_one();
     _termination_future.get();
 }
 
@@ -447,43 +464,49 @@ void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::s
 }
 
 void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::string name, unsigned int level) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    // Won't replace if it already exists
-    _data.insert({id,SharedPointer<LoggerData>(new LoggerData(level,name))});
-    if (name != Logger::_MAIN_THREAD_NAME) {
-        _no_alive_thread_registered = false;
-        _message_availability_condition.notify_one();
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        // Won't replace if it already exists
+        _data.insert({id,SharedPointer<LoggerData>(new LoggerData(level,name))});
+        if (name != Logger::_MAIN_THREAD_NAME) _no_alive_thread_registered = false;
     }
+    _message_availability_condition.notify_one();
 }
 
 void NonblockingLoggerScheduler::kill_data_instance(std::thread::id id) {
-    std::unique_lock<std::mutex> lock(_data_mutex);
-    auto entry = _data.find(id);
-    if (entry != _data.end()) entry->second->kill();
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        auto entry = _data.find(id);
+        if (entry != _data.end()) {
+            entry->second->kill();
+            if (entry->second->queue_size() == 0) _data.erase(entry);
+        }
 
-    if (not _are_alive_threads_registered()) {
-        _no_alive_thread_registered = true;
-        _message_availability_condition.notify_one();
+        _no_alive_thread_registered = not _are_alive_threads_registered_unlocked();
     }
+    _message_availability_condition.notify_one();
 }
 
-bool NonblockingLoggerScheduler::_are_alive_threads_registered() const {
-    for (auto d : _data)
+bool NonblockingLoggerScheduler::_are_alive_threads_registered_unlocked() const {
+    for (auto const& d : _data)
         if (d.second->thread_name() != Logger::_MAIN_THREAD_NAME and not d.second->is_dead()) return true;
     return false;
 }
 
 unsigned int NonblockingLoggerScheduler::current_level() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     return _data.find(std::this_thread::get_id())->second->current_level();
 }
 
 std::string NonblockingLoggerScheduler::current_thread_name() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     return _data.find(std::this_thread::get_id())->second->thread_name();
 }
 
 SizeType NonblockingLoggerScheduler::largest_thread_name_size() const {
+    std::lock_guard<std::mutex> lock(_data_mutex);
     SizeType result = 0;
-    for (auto entry : _data) result = std::max(result,entry.second->thread_name().size());
+    for (auto const& entry : _data) result = std::max(result,entry.second->thread_name().size());
     return result;
 }
 
@@ -498,53 +521,68 @@ void NonblockingLoggerScheduler::decrease_level(unsigned int i) {
 }
 
 void NonblockingLoggerScheduler::println(unsigned int level_increase, std::string text) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    _data.find(std::this_thread::get_id())->second->enqueue_println(level_increase,text);
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        _data.find(std::this_thread::get_id())->second->enqueue_println(level_increase,text);
+    }
     _message_availability_condition.notify_one();
 }
 
 void NonblockingLoggerScheduler::hold(std::string scope, std::string text) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    _data.find(std::this_thread::get_id())->second->enqueue_hold(scope,text);
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        _data.find(std::this_thread::get_id())->second->enqueue_hold(scope,text);
+    }
     _message_availability_condition.notify_one();
 }
 
 void NonblockingLoggerScheduler::release(std::string scope) {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    _data.find(std::this_thread::get_id())->second->enqueue_release(scope);
+    {
+        std::lock_guard<std::mutex> lock(_data_mutex);
+        _data.find(std::this_thread::get_id())->second->enqueue_release(scope);
+    }
     _message_availability_condition.notify_one();
 }
 
-bool NonblockingLoggerScheduler::_is_queue_empty() const {
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    for (auto entry : _data) {
+bool NonblockingLoggerScheduler::_is_queue_empty_unlocked() const {
+    for (auto const& entry : _data) {
         if (entry.second->queue_size() > 0) return false;
     }
     return true;
 }
 
-LogRawMessage NonblockingLoggerScheduler::_dequeue() {
-    SharedPointer<LoggerData> largest_data;
+LogRawMessage NonblockingLoggerScheduler::_dequeue_unlocked() {
+    auto largest_it = _data.end();
     SizeType largest_size = 0;
-    std::lock_guard<std::mutex> lock(_data_mutex);
-    auto it = _data.begin();
-    while (it != _data.end()) {
+    for (auto it = _data.begin(); it != _data.end(); ++it) {
         SizeType size = it->second->queue_size();
         if (size > largest_size) {
-            largest_data = it->second;
+            largest_it = it;
             largest_size = size;
         }
-        ++it;
     }
-    return LogRawMessage(largest_data->thread_name(),largest_data->dequeue());
+
+    auto const thread_name = largest_it->second->thread_name();
+    auto msg = largest_it->second->dequeue();
+    if (largest_it->second->is_dead() and largest_it->second->queue_size() == 0) _data.erase(largest_it);
+    return LogRawMessage(thread_name,msg);
 }
 
 void NonblockingLoggerScheduler::_consume_msgs() {
     while(true) {
-        std::unique_lock<std::mutex> lock(_message_availability_mutex);
-        _message_availability_condition.wait(lock, [this] { return (_terminate and _no_alive_thread_registered) or not _is_queue_empty(); });
-        if (_terminate and _no_alive_thread_registered and _is_queue_empty()) { _termination_promise.set_value(); return; }
-        auto msg = _dequeue();
+        LogRawMessage msg(std::string(), 0, std::string());
+        {
+            std::unique_lock<std::mutex> lock(_data_mutex);
+            _message_availability_condition.wait(lock, [this] {
+                return (_terminate and _no_alive_thread_registered) or not _is_queue_empty_unlocked();
+            });
+            if (_terminate and _no_alive_thread_registered and _is_queue_empty_unlocked()) {
+                _termination_promise.set_value();
+                return;
+            }
+            msg = _dequeue_unlocked();
+        }
+
         switch (msg.kind()) {
             default : [[fallthrough]];
             case RawMessageKind::PRINTLN : Logger::instance()._println(msg); break;
