@@ -997,7 +997,7 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
     bool thread_name_changed = (_cached_last_printed_thread_name != thread_name);
     bool level_changed = (_cached_last_printed_level != level);
     bool always_print_level = not(_configuration.prints_level_on_change_only());
-    auto largest_thread_name_size = _scheduler->largest_thread_name_size();
+    auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),thread_name.size());
     std::string thread_name_prefix = std::string(largest_thread_name_size-thread_name.size(),' ');
 
     if (can_print_thread_name and _configuration.thread_name_printing_policy() == ThreadNamePrintingPolicy::BEFORE) {
@@ -1029,10 +1029,13 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
     if (_configuration.indents_based_on_level()) std::clog << std::string(level, ' ');
 }
 
-void Logger::_print_preamble_for_extralines(unsigned int level) {
+void Logger::_print_preamble_for_extralines(unsigned int level, SizeType thread_name_size) {
     auto theme = _configuration.theme();
     std::clog << (level>9 ? "  " : " ");
-    if (_can_print_thread_name()) std::clog << std::string(_scheduler->largest_thread_name_size() + 1, ' ');
+    if (_can_print_thread_name()) {
+        auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),thread_name_size);
+        std::clog << std::string(largest_thread_name_size + 1, ' ');
+    }
     if (theme.multiline_separator.is_styled()) std::clog << theme.multiline_separator() << "·" << TerminalTextStyle::RESET;
     else std::clog << "·";
 
@@ -1100,7 +1103,8 @@ void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) 
 
 void Logger::_println(LogRawMessage const& msg) {
     std::lock_guard<std::mutex> lock(_output_mutex);
-    const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(_scheduler->largest_thread_name_size()+1) : 0)+msg.level;
+    const auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),msg.identifier.size());
+    const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(largest_thread_name_size+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
 
@@ -1128,7 +1132,7 @@ void Logger::_println(LogRawMessage const& msg) {
                 if (_is_holding()) _print_held_line();
                 if (_is_holding()) std::clog << '\r';
 
-                _print_preamble_for_extralines(msg.level);
+                _print_preamble_for_extralines(msg.level,msg.identifier.size());
             } else { // (remaining) Text shorter than the terminal line
                 std::string to_print = text.substr(text_ptr,text_size-text_ptr);
                 std::size_t newline_pos = to_print.find('\n');
@@ -1142,7 +1146,7 @@ void Logger::_println(LogRawMessage const& msg) {
                     }
 
                     text_ptr += newline_pos+1;
-                    _print_preamble_for_extralines(msg.level);
+                    _print_preamble_for_extralines(msg.level,msg.identifier.size());
                 } else { // Text reaches the end of the terminal line
                     std::clog << _apply_theme(to_print);
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.size()));
