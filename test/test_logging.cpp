@@ -366,13 +366,23 @@ class TestLogging {
         Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
         CONCLOG_PRINTLN("Printing on the " << Logger::instance().current_thread_name() << " thread without other threads");
         CONCLOG_TEST_EQUALS(Logger::instance().cached_last_printed_thread_name().compare("main"), 0);
-        Thread thread1([] { print_something1(); },"thr1");
-        Thread thread2([] { print_something2(); },"thr2");
-        CONCLOG_PRINTLN("Printing again on the main thread, but with other threads");
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        CONCLOG_TEST_PRINT(Logger::instance().cached_last_printed_thread_name());
-        CONCLOG_TEST_ASSERT(Logger::instance().cached_last_printed_thread_name().compare("thr1") == 0 or
-                            Logger::instance().cached_last_printed_thread_name().compare("thr2") == 0);
+
+        std::string thread1_name;
+        std::string thread2_name;
+        {
+            Thread thread1([&thread1_name] {
+                thread1_name = Logger::instance().current_thread_name();
+                print_something1();
+            },"thr1");
+            Thread thread2([&thread2_name] {
+                thread2_name = Logger::instance().current_thread_name();
+                print_something2();
+            },"thr2");
+            CONCLOG_PRINTLN("Printing again on the main thread, but with other threads");
+        }
+
+        CONCLOG_TEST_EQUALS(thread1_name.compare("thr1"), 0);
+        CONCLOG_TEST_EQUALS(thread2_name.compare("thr2"), 0);
     }
 
     void test_multiple_threads_with_nonblocking_scheduler() {
