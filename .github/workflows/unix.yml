@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - coverage
   pull_request:
 
 env:
@@ -75,3 +76,32 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       run: ctest -j $($NPROC) --output-on-failure
+
+  thread-sanitizer:
+    name: Ubuntu 24.04 Clang 16 [ThreadSanitizer]
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Set Up Dependencies
+      run: sudo apt install -y cmake ninja-build pkg-config clang-16
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build-tsan
+
+    - name: Configure CMake
+      working-directory: ${{runner.workspace}}/build-tsan
+      run: cmake ${{runner.workspace}}/conclog -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++-16 -DTHREAD_SANITIZER=ON -G Ninja
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build-tsan
+      run: cmake --build . --parallel 2
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build-tsan
+      env:
+        TSAN_OPTIONS: halt_on_error=1
+      run: ctest --output-on-failure
