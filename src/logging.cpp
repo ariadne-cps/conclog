@@ -473,7 +473,7 @@ void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::s
             return _data.find(id) == _data.end();
         });
         _data.insert({id,SharedPointer<LoggerData>(new LoggerData(level,name))});
-        if (name != Logger::_MAIN_THREAD_NAME) _no_alive_thread_registered = false;
+        _no_alive_thread_registered = false;
     }
     _message_availability_condition.notify_one();
 }
@@ -582,9 +582,9 @@ void NonblockingLoggerScheduler::_consume_msgs() {
         {
             std::unique_lock<std::mutex> lock(_data_mutex);
             _message_availability_condition.wait(lock, [this] {
-                return (_terminate and _no_alive_thread_registered) or not _is_queue_empty_unlocked();
+                return _terminate or not _is_queue_empty_unlocked();
             });
-            if (_terminate and _no_alive_thread_registered and _is_queue_empty_unlocked()) {
+            if (_terminate and _is_queue_empty_unlocked()) {
                 _termination_promise.set_value();
                 return;
             }
@@ -958,12 +958,8 @@ std::string Logger::_apply_theme(std::string const& text) const {
                     if (it != text.begin()) {
                         if (isalpha(*(it - 1)))
                             styled = false;
-                        else if (isdigit(*(it - 1))) {
-                            if ((it - 1) != text.begin()) {
-                                if (isalpha(*(it - 2)))
-                                    styled = false;
-                            }
-                        }
+                        else if (isdigit(*(it - 1)) and (it - 1) != text.begin() and isalpha(*(it - 2)))
+                            styled = false;
                     }
                     if (styled) ss << theme.number() << c << TerminalTextStyle::RESET;
                     else ss << c;
@@ -990,16 +986,15 @@ std::string Logger::_apply_theme(std::string const& text) const {
 
 bool isalphanumeric_withstylecodes(std::string text, size_t pos) {
     auto c = text.at(pos);
-    if (not isalpha(c) and not isdigit(c)) {
-        return false;
-    } else if (c == 'm' and pos > 2) { // If this is the last character of a feasible style code
-        auto sub = text.substr(pos-3,3);
-        // Check for reset code
-        if (sub == "\u001b[0") {
-            if (isalpha(text.at(pos-4)) or isdigit(text.at(pos-4))) return true;
-            else return false;
-        } else return true;
-    } else return true;
+    if (not isalpha(c) and not isdigit(c)) return false;
+    if (c != 'm' or pos <= 3) return true;
+
+    auto sub = text.substr(pos-3,3);
+    // A reset code ends with ESC[0m. In that case adjacency is determined by
+    // the character immediately preceding the four-byte reset sequence.
+    if (sub == "\u001b[0")
+        return isalpha(text.at(pos-4)) or isdigit(text.at(pos-4));
+    return true;
 }
 
 std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
