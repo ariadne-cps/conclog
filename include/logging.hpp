@@ -248,7 +248,7 @@ class LoggerConfiguration {
     //! \brief Style theme for terminal output
     void set_theme(TerminalTextTheme const& theme);
     //! \brief Get the current theme used
-    TerminalTextTheme const& theme() const;
+    TerminalTextTheme theme() const;
     //! \brief Add a keyword to the default ones offered, forcing a given style
     //! \details Adding an existing keyword has no effect
     void add_custom_keyword(std::string const& text, TerminalTextStyle const& style);
@@ -256,11 +256,12 @@ class LoggerConfiguration {
     //! \details Adding an existing keyword has no effect. Changing the theme will not apply to this custom keyword.
     void add_custom_keyword(std::string const& text);
     //! \brief Get the map of keywords (a TerminalTextStyle equal to TT_STYLE_NONE implies no custom style forced)
-    std::map<std::string,TerminalTextStyle> const& custom_keywords() const;
+    std::map<std::string,TerminalTextStyle> custom_keywords() const;
 
     friend OutputStream& operator<<(OutputStream& os, LoggerConfiguration const& configuration);
 
   private:
+    mutable std::mutex _mutex;
     unsigned int _verbosity;
     bool _indents_based_on_level;
     bool _prints_level_on_change_only;
