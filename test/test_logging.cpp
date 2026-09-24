@@ -222,6 +222,7 @@ class TestLogging {
     void test_stylecode_adjacency_helper() {
         CONCLOG_TEST_ASSERT(!isalphanumeric_withstylecodes("[",0));
         CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes("A",0));
+        CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes("1",0));
         CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes("m",0));
 
         std::string alpha_reset = std::string("A\033[0m");
