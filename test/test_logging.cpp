@@ -94,6 +94,7 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_hide_call_function_with_entrance_and_exit())
         CONCLOG_TEST_CALL(test_indents_based_on_level())
         CONCLOG_TEST_CALL(test_high_level_multiline_hold())
+        CONCLOG_TEST_CALL(test_high_level_hidden_level_and_hold_reprint())
         CONCLOG_TEST_CALL(test_hold_line())
         CONCLOG_TEST_CALL(test_hold_line_with_newline_println())
         CONCLOG_TEST_CALL(test_hold_long_line())
@@ -224,6 +225,33 @@ class TestLogging {
         Logger::instance().release("coverage-high-level");
         Logger::instance().decrease_level(9);
 
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
+    }
+
+    void test_high_level_hidden_level_and_hold_reprint() {
+        Logger::instance().use_blocking_scheduler();
+        Logger::instance().configuration().set_theme(TT_THEME_NONE);
+        Logger::instance().configuration().set_verbosity(20);
+        Logger::instance().configuration().set_handles_multiline_output(true);
+        Logger::instance().configuration().set_prints_level_on_change_only(true);
+        Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
+
+        Logger::instance().increase_level(9);
+        Logger::instance().hold("coverage-hidden-level","held-value");
+
+        // First print establishes cached level 10. The second print keeps the
+        // same level, so the two-character hidden-level branch is exercised.
+        CONCLOG_PRINTLN("level-ten-first")
+        CONCLOG_PRINTLN("level-ten-second")
+
+        // Keep the hold active across a completed println so the held line is
+        // deterministically reprinted at the end of _println().
+        CONCLOG_PRINTLN("held-line-reprint")
+
+        Logger::instance().release("coverage-hidden-level");
+        Logger::instance().decrease_level(9);
+
+        Logger::instance().configuration().set_prints_level_on_change_only(false);
         Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::NEVER);
     }
 
