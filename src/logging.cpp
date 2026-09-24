@@ -740,7 +740,7 @@ OutputStream& operator<<(OutputStream& os, LoggerConfiguration const& c) {
 
 Logger::Logger() :
     _cached_num_held_columns(0), _cached_last_printed_level(0), _cached_last_printed_thread_name(std::string()),
-    _scheduler(std::make_shared<NonblockingLoggerScheduler>()) { }
+    _scheduler(std::make_shared<NonblockingLoggerScheduler>()), _thread_registry(nullptr) { }
 
 const std::string Logger::_MAIN_THREAD_NAME = "main";
 const unsigned int Logger::_MUTE_LEVEL_OFFSET = 1024;
