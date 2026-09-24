@@ -614,99 +614,120 @@ LoggerConfiguration& Logger::configuration() {
 }
 
 void LoggerConfiguration::set_verbosity(unsigned int v) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _verbosity = v;
 }
 
 void LoggerConfiguration::set_indents_based_on_level(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _indents_based_on_level = b;
 }
 
 void LoggerConfiguration::set_prints_level_on_change_only(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _prints_level_on_change_only = b;
 }
 
 void LoggerConfiguration::set_prints_scope_entrance(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _prints_scope_entrance = b;
 }
 
 void LoggerConfiguration::set_prints_scope_exit(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _prints_scope_exit = b;
 }
 
 void LoggerConfiguration::set_handles_multiline_output(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _handles_multiline_output = b;
 }
 
 void LoggerConfiguration::set_discards_newlines_and_indentation(bool b) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _discards_newlines_and_indentation = b;
 }
 
 void LoggerConfiguration::set_thread_name_printing_policy(ThreadNamePrintingPolicy p) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _thread_name_printing_policy = p;
 }
 
 void LoggerConfiguration::set_theme(TerminalTextTheme const& theme) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _theme = theme;
 }
 
 unsigned int LoggerConfiguration::verbosity() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _verbosity;
 }
 
 bool LoggerConfiguration::indents_based_on_level() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _indents_based_on_level;
 }
 
 bool LoggerConfiguration::prints_level_on_change_only() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _prints_level_on_change_only;
 }
 
 bool LoggerConfiguration::prints_scope_entrance() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _prints_scope_entrance;
 }
 
 bool LoggerConfiguration::prints_scope_exit() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _prints_scope_exit;
 }
 
 bool LoggerConfiguration::handles_multiline_output() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _handles_multiline_output;
 }
 
 bool LoggerConfiguration::discards_newlines_and_indentation() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _discards_newlines_and_indentation;
 }
 
 ThreadNamePrintingPolicy LoggerConfiguration::thread_name_printing_policy() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _thread_name_printing_policy;
 }
 
-TerminalTextTheme const& LoggerConfiguration::theme() const {
+TerminalTextTheme LoggerConfiguration::theme() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _theme;
 }
 
 void LoggerConfiguration::add_custom_keyword(std::string const& text, TerminalTextStyle const& style) {
+    std::lock_guard<std::mutex> lock(_mutex);
     _custom_keywords.insert({text,style});
 }
 
 void LoggerConfiguration::add_custom_keyword(std::string const& text) {
-    add_custom_keyword(text,theme().keyword);
+    std::lock_guard<std::mutex> lock(_mutex);
+    _custom_keywords.insert({text,_theme.keyword});
 }
 
-std::map<std::string,TerminalTextStyle> const& LoggerConfiguration::custom_keywords() const {
+std::map<std::string,TerminalTextStyle> LoggerConfiguration::custom_keywords() const {
+    std::lock_guard<std::mutex> lock(_mutex);
     return _custom_keywords;
 }
 
 OutputStream& operator<<(OutputStream& os, LoggerConfiguration const& c) {
     os << "LoggerConfiguration("
-       << "\n  verbosity=" << c._verbosity
-       << ",\n  indents_based_on_level=" << c._indents_based_on_level
-       << ",\n  prints_level_on_change_only=" << c._prints_level_on_change_only
-       << ",\n  prints_scope_entrance=" << c._prints_scope_entrance
-       << ",\n  prints_scope_exit=" << c._prints_scope_exit
-       << ",\n  handles_multiline_output=" << c._handles_multiline_output
-       << ",\n  discards_newlines_and_indentation=" << c._discards_newlines_and_indentation
-       << ",\n  thread_name_printing_policy=" << c._thread_name_printing_policy
+       << "\n  verbosity=" << c.verbosity()
+       << ",\n  indents_based_on_level=" << c.indents_based_on_level()
+       << ",\n  prints_level_on_change_only=" << c.prints_level_on_change_only()
+       << ",\n  prints_scope_entrance=" << c.prints_scope_entrance()
+       << ",\n  prints_scope_exit=" << c.prints_scope_exit()
+       << ",\n  handles_multiline_output=" << c.handles_multiline_output()
+       << ",\n  discards_newlines_and_indentation=" << c.discards_newlines_and_indentation()
+       << ",\n  thread_name_printing_policy=" << c.thread_name_printing_policy()
        << ",\n  theme=(not shown)" // To show theme colors appropriately, print the theme object directly on standard output
        << "\n)";
     return os;
@@ -966,7 +987,8 @@ std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
                                                               {"true",_configuration.theme().keyword},
                                                               {"false",_configuration.theme().keyword},
                                                               {"inf",_configuration.theme().keyword}};
-    keyword_styles.insert(_configuration.custom_keywords().begin(),_configuration.custom_keywords().end());
+    auto custom_keywords = _configuration.custom_keywords();
+    keyword_styles.insert(custom_keywords.begin(),custom_keywords.end());
 
     for (auto kws : keyword_styles) {
         std::ostringstream current_result;

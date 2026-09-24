@@ -123,5 +123,42 @@ int main() {
         if (!file_contains(reuse_filename,"reuse-" + std::to_string(i) + "@")) return 4;
     }
 
+    const std::string configuration_filename = "configuration_race.log";
+    constexpr unsigned int CONFIG_MESSAGES = 1000;
+
+    Logger::instance().use_nonblocking_scheduler();
+    Logger::instance().redirect_to_file(configuration_filename.c_str());
+
+    std::atomic<bool> producer_started{false};
+    std::thread producer([&registry,&producer_started]() {
+        registry.register_thread();
+        Logger::instance().register_self_thread("config-producer",1);
+        producer_started.store(true,std::memory_order_release);
+        for (unsigned int i=0; i<CONFIG_MESSAGES; ++i) {
+            CONCLOG_PRINTLN("config-message-" << i << " true false + -")
+        }
+        Logger::instance().unregister_thread(std::this_thread::get_id());
+        registry.unregister_thread();
+    });
+
+    while (!producer_started.load(std::memory_order_acquire)) std::this_thread::yield();
+
+    for (unsigned int i=0; i<CONFIG_MESSAGES; ++i) {
+        auto& configuration = Logger::instance().configuration();
+        configuration.set_theme((i % 2 == 0) ? TT_THEME_DARK : TT_THEME_LIGHT);
+        configuration.set_thread_name_printing_policy((i % 3 == 0) ? ThreadNamePrintingPolicy::BEFORE : ThreadNamePrintingPolicy::AFTER);
+        configuration.set_prints_level_on_change_only(i % 2 == 0);
+        configuration.set_indents_based_on_level(i % 2 != 0);
+        configuration.set_handles_multiline_output(i % 2 == 0);
+        configuration.set_discards_newlines_and_indentation(i % 2 != 0);
+        configuration.add_custom_keyword("config-keyword-" + std::to_string(i));
+    }
+
+    producer.join();
+    Logger::instance().use_blocking_scheduler();
+    Logger::instance().redirect_to_console();
+
+    if (count_lines(configuration_filename) != CONFIG_MESSAGES) return 5;
+
     return 0;
 }
