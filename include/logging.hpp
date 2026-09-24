@@ -209,6 +209,10 @@ enum class ThreadNamePrintingPolicy { NEVER, BEFORE, AFTER };
 
 OutputStream& operator<<(OutputStream& os, const ThreadNamePrintingPolicy& p);
 
+//! \brief Return whether the character immediately preceding a pos is alphanumeric,
+//! accounting for an ANSI reset sequence ending at a pos.
+bool isalphanumeric_withstylecodes(std::string const& text, size_t pos);
+
 //! \brief Configuration of visualisation settings for a Logger
 class LoggerConfiguration {
   public:
