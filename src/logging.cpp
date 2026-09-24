@@ -591,9 +591,8 @@ void NonblockingLoggerScheduler::_consume_msgs() {
             msg = _dequeue_unlocked();
         }
 
-        auto const kind = msg.kind();
-        if (kind == RawMessageKind::PRINTLN) Logger::instance()._println(msg);
-        else if (kind == RawMessageKind::HOLD) Logger::instance()._hold(msg);
+        if (msg.kind() == RawMessageKind::PRINTLN) Logger::instance()._println(msg);
+        else if (msg.kind() == RawMessageKind::HOLD) Logger::instance()._hold(msg);
         else Logger::instance()._release(msg);
     }
 }
