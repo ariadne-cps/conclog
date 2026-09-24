@@ -213,6 +213,9 @@ class TestLogging {
         CONCLOG_PRINTLN("[edge]")
         // Reset-code path with an alphabetic character immediately before ESC[0m.
         CONCLOG_PRINTLN("A" << TerminalTextStyle::RESET << "edge")
+        // With keyword-only styling, this raw reset sequence reaches the
+        // keyword parser unchanged and makes the pre-reset character alphabetic.
+        CONCLOG_PRINTLN(std::string("A\033[0medge"))
     }
 
     void test_scheduler_noop_registration_paths() {
