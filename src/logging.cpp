@@ -465,8 +465,13 @@ void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::s
 
 void NonblockingLoggerScheduler::create_data_instance(std::thread::id id, std::string name, unsigned int level) {
     {
-        std::lock_guard<std::mutex> lock(_data_mutex);
-        // Won't replace if it already exists
+        std::unique_lock<std::mutex> lock(_data_mutex);
+        // A std::thread::id may be reused after a thread terminates. If the old
+        // thread still has queued messages, wait until the consumer drains and
+        // removes its dead LoggerData before registering the new thread.
+        _message_availability_condition.wait(lock, [this,id] {
+            return _data.find(id) == _data.end();
+        });
         _data.insert({id,SharedPointer<LoggerData>(new LoggerData(level,name))});
         if (name != Logger::_MAIN_THREAD_NAME) _no_alive_thread_registered = false;
     }
@@ -564,7 +569,10 @@ LogRawMessage NonblockingLoggerScheduler::_dequeue_unlocked() {
 
     auto const thread_name = largest_it->second->thread_name();
     auto msg = largest_it->second->dequeue();
-    if (largest_it->second->is_dead() and largest_it->second->queue_size() == 0) _data.erase(largest_it);
+    if (largest_it->second->is_dead() and largest_it->second->queue_size() == 0) {
+        _data.erase(largest_it);
+        _message_availability_condition.notify_all();
+    }
     return LogRawMessage(thread_name,msg);
 }
 
