@@ -204,6 +204,8 @@ class TestLogging {
         // Style-code keyword adjacency: styled alphanumeric text before a
         // keyword forces isalphanumeric_withstylecodes() through its ESC path.
         CONCLOG_PRINTLN(TT_STYLE_DARKORANGE() << "A" << TerminalTextStyle::RESET << "edge")
+        CONCLOG_PRINTLN("m edge")
+        CONCLOG_PRINTLN("Am" << TerminalTextStyle::RESET << "edge")
     }
 
     void test_scheduler_noop_registration_paths() {
