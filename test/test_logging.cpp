@@ -93,6 +93,7 @@ class TestLogging {
         CONCLOG_TEST_CALL(test_print_configuration())
         CONCLOG_TEST_CALL(test_style_branch_combinations())
         CONCLOG_TEST_CALL(test_parser_branch_boundaries())
+        CONCLOG_TEST_CALL(test_stylecode_adjacency_helper())
         CONCLOG_TEST_CALL(test_scheduler_noop_registration_paths())
         CONCLOG_TEST_CALL(test_hold_release_missing_scope())
         CONCLOG_TEST_CALL(test_remaining_branch_boundaries())
@@ -216,6 +217,20 @@ class TestLogging {
         // With keyword-only styling, this raw reset sequence reaches the
         // keyword parser unchanged and makes the pre-reset character alphabetic.
         CONCLOG_PRINTLN(std::string("A\033[0medge"))
+    }
+
+    void test_stylecode_adjacency_helper() {
+        CONCLOG_TEST_ASSERT(!isalphanumeric_withstylecodes("[",0));
+        CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes("A",0));
+        CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes("m",0));
+
+        std::string alpha_reset = std::string("A\033[0m");
+        std::string digit_reset = std::string("1\033[0m");
+        std::string punctuation_reset = std::string("[\033[0m");
+
+        CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes(alpha_reset,alpha_reset.size()-1));
+        CONCLOG_TEST_ASSERT(isalphanumeric_withstylecodes(digit_reset,digit_reset.size()-1));
+        CONCLOG_TEST_ASSERT(!isalphanumeric_withstylecodes(punctuation_reset,punctuation_reset.size()-1));
     }
 
     void test_scheduler_noop_registration_paths() {
