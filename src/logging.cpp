@@ -749,6 +749,7 @@ const std::string Logger::_MAIN_THREAD_NAME = "main";
 const unsigned int Logger::_MUTE_LEVEL_OFFSET = 1024;
 
 Logger::~Logger() {
+    std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->terminate();
 }
 
@@ -762,23 +763,26 @@ bool Logger::has_thread_registry_attached() const {
 }
 
 void Logger::use_immediate_scheduler() {
+    std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    else _scheduler->terminate();
+    _scheduler->terminate();
     _scheduler.reset(new ImmediateLoggerScheduler());
 }
 
 void Logger::use_blocking_scheduler() {
+    std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    else _scheduler->terminate();
+    _scheduler->terminate();
     _scheduler.reset(new BlockingLoggerScheduler());
 }
 
 void Logger::use_nonblocking_scheduler() {
+    std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-    else _scheduler->terminate();
+    _scheduler->terminate();
     _scheduler.reset(new NonblockingLoggerScheduler());
 }
 
@@ -795,6 +799,7 @@ void Logger::redirect_to_file(const char* filename) {
 }
 
 void Logger::register_thread(std::thread::id id, std::string name) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
@@ -803,6 +808,7 @@ void Logger::register_thread(std::thread::id id, std::string name) {
 }
 
 void Logger::register_self_thread(std::string name, unsigned int level) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
@@ -811,6 +817,7 @@ void Logger::register_self_thread(std::string name, unsigned int level) {
 }
 
 void Logger::unregister_thread(std::thread::id id) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     auto nbls = dynamic_cast<NonblockingLoggerScheduler*>(_scheduler.get());
     auto bls = dynamic_cast<BlockingLoggerScheduler*>(_scheduler.get());
@@ -819,18 +826,22 @@ void Logger::unregister_thread(std::thread::id id) {
 }
 
 void Logger::increase_level(unsigned int i) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->increase_level(i);
 }
 
 void Logger::decrease_level(unsigned int i) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->decrease_level(i);
 }
 
 void Logger::mute_increase_level() {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->increase_level(_MUTE_LEVEL_OFFSET);
 }
 
 void Logger::mute_decrease_level() {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->decrease_level(_MUTE_LEVEL_OFFSET);
 }
 
@@ -839,10 +850,12 @@ bool Logger::is_muted_at(unsigned int i) const {
 }
 
 unsigned int Logger::current_level() const {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     return _scheduler->current_level();
 }
 
 std::string Logger::current_thread_name() const {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     return _scheduler->current_thread_name();
 }
 
@@ -852,14 +865,17 @@ std::string Logger::cached_last_printed_thread_name() const {
 }
 
 void Logger::println(unsigned int level_increase, std::string text) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->println(level_increase, text);
 }
 
 void Logger::hold(std::string scope, std::string text) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->hold(scope, text);
 }
 
 void Logger::release(std::string scope) {
+    std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->release(scope);
 }
 
