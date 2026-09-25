@@ -769,11 +769,26 @@ bool Logger::has_thread_registry_attached() const {
 }
 
 void Logger::use_immediate_scheduler() {
+#ifdef _WIN32
+    std::cerr << "[logging] use_immediate: lock" << std::endl;
+#endif
     std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
+#ifdef _WIN32
+    std::cerr << "[logging] use_immediate: registry" << std::endl;
+#endif
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
+#ifdef _WIN32
+    std::cerr << "[logging] use_immediate: terminate" << std::endl;
+#endif
     _scheduler->terminate();
+#ifdef _WIN32
+    std::cerr << "[logging] use_immediate: reset" << std::endl;
+#endif
     _scheduler.reset(new ImmediateLoggerScheduler());
+#ifdef _WIN32
+    std::cerr << "[logging] use_immediate: done" << std::endl;
+#endif
 }
 
 void Logger::use_blocking_scheduler() {
