@@ -344,6 +344,9 @@ void ImmediateLoggerScheduler::decrease_level(unsigned int i) {
 }
 
 void ImmediateLoggerScheduler::println(unsigned int level_increase, std::string text) {
+#ifdef _WIN32
+    std::cerr << "[logging] Immediate::println enter" << std::endl;
+#endif
     Logger::instance()._println(LogRawMessage(std::string(), _current_level + level_increase, text));
 }
 
@@ -886,6 +889,9 @@ std::string Logger::cached_last_printed_thread_name() const {
 }
 
 void Logger::println(unsigned int level_increase, std::string text) {
+#ifdef _WIN32
+    std::cerr << "[logging] Logger::println enter" << std::endl;
+#endif
     std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->println(level_increase, text);
 }
@@ -1165,13 +1171,28 @@ void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) 
 }
 
 void Logger::_println(LogRawMessage const& msg) {
+#ifdef _WIN32
+    std::cerr << "[logging] _println enter" << std::endl;
+#endif
     std::lock_guard<std::mutex> lock(_output_mutex);
+#ifdef _WIN32
+    std::cerr << "[logging] _println before largest_thread_name_size" << std::endl;
+#endif
     const auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),msg.identifier.size());
+#ifdef _WIN32
+    std::cerr << "[logging] _println after largest_thread_name_size" << std::endl;
+#endif
     const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(largest_thread_name_size+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
 
+#ifdef _WIN32
+    std::cerr << "[logging] _println before preamble" << std::endl;
+#endif
     _print_preamble_for_firstline(msg.level,msg.identifier);
+#ifdef _WIN32
+    std::cerr << "[logging] _println after preamble" << std::endl;
+#endif
     std::string text = msg.text;
     if (configuration().discards_newlines_and_indentation()) text = _discard_newlines_and_indentation(text);
     if (configuration().handles_multiline_output() and msg.text.size() > 0) {
