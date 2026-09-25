@@ -1041,6 +1041,9 @@ std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
 
 void Logger::_print_preamble_for_firstline(unsigned int level, std::string thread_name) {
 #ifdef _WIN32
+    const bool trace_preamble = (level == 1 && thread_name.empty());
+#endif
+#ifdef _WIN32
     std::cerr << "[logging] preamble: before theme" << std::endl;
 #endif
     auto theme = _configuration.theme();
@@ -1097,11 +1100,41 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
         } else std::clog << std::string(largest_thread_name_size+1, ' ');
     }
 
+#ifdef _WIN32
+    if (trace_preamble) std::cerr << "[logging] preamble: before level output" << std::endl;
+#endif
     if ((can_print_thread_name and thread_name_changed) or always_print_level or level_changed) {
-        if (theme.level_number.is_styled()) std::clog << theme.level_number() << level << TerminalTextStyle::RESET;
-        else std::clog << level;
+        if (theme.level_number.is_styled()) {
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: styled level" << std::endl;
+#endif
+            auto level_style = theme.level_number();
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: level style built" << std::endl;
+#endif
+            std::clog << level_style;
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: level style written" << std::endl;
+#endif
+            std::clog << level;
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: level written" << std::endl;
+#endif
+            std::clog << TerminalTextStyle::RESET;
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: reset written" << std::endl;
+#endif
+        } else {
+#ifdef _WIN32
+            if (trace_preamble) std::cerr << "[logging] preamble: plain level" << std::endl;
+#endif
+            std::clog << level;
+        }
     } else std::clog << (level>9 ? "  " : " ");
 
+#ifdef _WIN32
+    if (trace_preamble) std::cerr << "[logging] preamble: after level output" << std::endl;
+#endif
     if (can_print_thread_name and _configuration.thread_name_printing_policy() == ThreadNamePrintingPolicy::AFTER) {
         if (thread_name_changed) {
             if (theme.at.is_styled()) std::clog << theme.at() << "@" << TerminalTextStyle::RESET << thread_name;
@@ -1109,6 +1142,9 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
         } else std::clog << std::string(largest_thread_name_size+1, ' ');
     }
 
+#ifdef _WIN32
+    if (trace_preamble) std::cerr << "[logging] preamble: before separator output" << std::endl;
+#endif
     if (not level_changed and _configuration.prints_level_on_change_only() and theme.level_hidden_separator.is_styled()) {
         std::clog << theme.level_hidden_separator() << "|" << TerminalTextStyle::RESET;
     } else if ((level_changed and theme.level_shown_separator.is_styled()) or not _configuration.prints_level_on_change_only()) {
@@ -1116,7 +1152,13 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
     } else {
         std::clog << "|";
     }
+#ifdef _WIN32
+    if (trace_preamble) std::cerr << "[logging] preamble: after separator output" << std::endl;
+#endif
     if (_configuration.indents_based_on_level()) std::clog << std::string(level, ' ');
+#ifdef _WIN32
+    if (trace_preamble) std::cerr << "[logging] preamble: done" << std::endl;
+#endif
 }
 
 void Logger::_print_preamble_for_extralines(unsigned int level, SizeType thread_name_size) {
