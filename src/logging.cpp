@@ -739,8 +739,16 @@ Logger::Logger() :
     _scheduler(std::make_shared<NonblockingLoggerScheduler>()), _thread_registry(nullptr) { }
 
 Logger& Logger::instance() {
+#ifdef _WIN32
+    // Keep the logger alive for the process lifetime. Destroying a Logger whose
+    // nonblocking scheduler owns a worker thread during DLL teardown can
+    // deadlock under the Windows loader lock.
+    static Logger* instance = new Logger();
+    return *instance;
+#else
     static Logger instance;
     return instance;
+#endif
 }
 
 const std::string Logger::_MAIN_THREAD_NAME = "main";
