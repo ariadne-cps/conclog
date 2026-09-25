@@ -25,7 +25,7 @@
 #ifndef LOGGING_THREAD_REGISTRY_INTERFACE_HPP
 #define LOGGING_THREAD_REGISTRY_INTERFACE_HPP
 
-namespace Logging {
+namespace Ariadne::Logging {
 
 //! \brief Interface to query the presence of registered threads
 class ThreadRegistryInterface {
@@ -34,6 +34,6 @@ class ThreadRegistryInterface {
     virtual bool has_threads_registered() const = 0;
 };
 
-} // namespace Logging
+} // namespace Ariadne::Logging
 
 #endif // LOGGING_THREAD_REGISTRY_INTERFACE_HPP
