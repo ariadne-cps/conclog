@@ -1,11 +1,11 @@
 
 
-# ConcLog
+# Logging
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT) [![Unix Status](https://github.com/ariadne-cps/conclog/workflows/Unix/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/unix.yml)
-[![Windows Status](https://github.com/ariadne-cps/conclog/workflows/Windows/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/windows.yml) [![Coverage Status](https://github.com/ariadne-cps/conclog/workflows/Coverage/badge.svg)](https://github.com/ariadne-cps/conclog/actions/workflows/coverage.yml) [![codecov](https://codecov.io/gh/ariadne-cps/conclog/branch/main/graph/badge.svg)](https://codecov.io/gh/ariadne-cps/conclog)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Unix Status](https://github.com/ariadne-cps/logging/workflows/Unix/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/unix.yml)
+[![Windows Status](https://github.com/ariadne-cps/logging/workflows/Windows/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/windows.yml) [![Coverage Status](https://github.com/ariadne-cps/logging/workflows/Coverage/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/coverage.yml) [![codecov](https://codecov.io/gh/ariadne-cps/logging/branch/main/graph/badge.svg)](https://codecov.io/gh/ariadne-cps/logging)
 
-ConcLog is a library for concurrent logging.
+Logging is a library for concurrent logging.
 It features the following:
 1) Print from different threads with no overlapping of the output
 2) Support for automatic registration/deregistration of threads (with example Thread implementation provided in the tests)
@@ -40,6 +40,6 @@ The library is meant to be used as a dependency, in particular by disabling test
 
 ## Contribution guidelines ##
 
-If you would like to contribute to ConcLog, please contact the developer: 
+If you would like to contribute to Logging, please contact the developer: 
 
 * Luca Geretti <luca.geretti@univr.it>

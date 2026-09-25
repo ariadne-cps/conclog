@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(ConcLog VERSION 1.0)
+project(Logging VERSION 1.0)
 
 option(COVERAGE "Enable coverage reporting" OFF)
 option(THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
@@ -9,7 +9,7 @@ if(COVERAGE AND THREAD_SANITIZER)
     message(FATAL_ERROR "COVERAGE and THREAD_SANITIZER cannot be enabled together.")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules/configuration/cmake")
 
 if(COVERAGE)
     if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
@@ -80,11 +80,11 @@ find_package(Threads REQUIRED)
 
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include)
 
-if(NOT TARGET conclog)
+if(NOT TARGET logging)
     add_subdirectory(src)
 
-    add_library(conclog ${LIBRARY_KIND} $<TARGET_OBJECTS:CONCLOG_SRC>)
-    target_link_libraries(conclog ${CMAKE_THREAD_LIBS_INIT})
+    add_library(logging ${LIBRARY_KIND} $<TARGET_OBJECTS:LOGGING_SRC>)
+    target_link_libraries(logging ${CMAKE_THREAD_LIBS_INIT})
 
     if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
         if(NOT TARGET tests)
@@ -96,7 +96,7 @@ if(NOT TARGET conclog)
             if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
             setup_target_for_coverage_llvm(
                 NAME coverage
-                TARGET conclog
+                TARGET logging
                 OBJECTS
                     test_logging
                 DEPENDENCIES tests

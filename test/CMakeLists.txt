@@ -7,7 +7,7 @@ set(UNIT_TESTS
 
 foreach(TEST ${UNIT_TESTS})
     add_executable(${TEST} ${TEST}.cpp)
-    target_link_libraries(${TEST} conclog)
+    target_link_libraries(${TEST} logging)
     add_test(${TEST} ${TEST})
 endforeach()
 

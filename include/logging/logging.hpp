@@ -6,28 +6,24 @@
  ****************************************************************************/
 
 /*
- * This file is part of ConcLog, under the MIT license.
+ *  This file is part of Logging.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
+ *  Logging is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ *  Logging is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  You should have received a copy of the GNU General Public License
+ *  along with Logging.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef CONCLOGGING_HPP
-#define CONCLOGGING_HPP
+#ifndef LOGGINGGING_HPP
+#define LOGGINGGING_HPP
 
 #include <iostream>
 #include <fstream>
@@ -42,38 +38,38 @@
 #include <shared_mutex>
 #include <memory>
 
-#include "thread_registry_interface.hpp"
+#include "logging/thread_registry_interface.hpp"
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
-#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#define LOGGING_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#define CONCLOG_PRETTY_FUNCTION __FUNCSIG__
+#define LOGGING_PRETTY_FUNCTION __FUNCSIG__
 #elif defined(darwin) || defined(__darwin) || defined(__darwin__) || defined(__APPLE__)
-#define CONCLOG_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#define LOGGING_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #else
-#define CONCLOG_PRETTY_FUNCTION ""
+#define LOGGING_PRETTY_FUNCTION ""
 #endif
 
 // Automatic level increase/decrease in a scope; meant to be used once within a function, at top scope; necessary for print holding.
-#define CONCLOG_SCOPE_CREATE auto logscopemanager = LogScopeManager(CONCLOG_PRETTY_FUNCTION);
+#define LOGGING_SCOPE_CREATE auto logscopemanager = LogScopeManager(LOGGING_PRETTY_FUNCTION);
 // Managed level increase/decrease around the function fn; if the function throws, manual decrease of the proper level is required.
-#define CONCLOG_RUN_AT(level,fn) Logger::instance().increase_level(level); fn; Logger::instance().decrease_level(level);
+#define LOGGING_RUN_AT(level,fn) Logger::instance().increase_level(level); fn; Logger::instance().decrease_level(level);
 // Mute the logger for the function fn; if the function throws, manual decrease of the proper level is required.
-#define CONCLOG_RUN_MUTED(fn) Logger::instance().mute_increase_level(); fn; Logger::instance().mute_decrease_level();
+#define LOGGING_RUN_MUTED(fn) Logger::instance().mute_increase_level(); fn; Logger::instance().mute_decrease_level();
 // Print one line at the current level; the text shouldn't have carriage returns, but for efficiency purposes this is not checked.
-#define CONCLOG_PRINTLN(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(0,logger_stream.str()); } }
+#define LOGGING_PRINTLN(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(0,logger_stream.str()); } }
 // Print one line at an increased level with respect to the current one; the text shouldn't have carriage returns, but for efficiency purposes this is not checked.
-#define CONCLOG_PRINTLN_AT(level,text) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(level,logger_stream.str()); } }
+#define LOGGING_PRINTLN_AT(level,text) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().println(level,logger_stream.str()); } }
 // Print variable in one line at the current level, using the formatting convention.
-#define CONCLOG_PRINTLN_VAR(var) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(0,logger_stream.str()); } }
+#define LOGGING_PRINTLN_VAR(var) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(0,logger_stream.str()); } }
 // Print variable in one line at the increased level with respect to the current one, using the formatting convention.
-#define CONCLOG_PRINTLN_VAR_AT(level,var) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(level,logger_stream.str()); } }
+#define LOGGING_PRINTLN_VAR_AT(level,var) { if (!Logger::instance().is_muted_at(level)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << #var << " = " << var; Logger::instance().println(level,logger_stream.str()); } }
 // Print a text at the bottom line, holding it until the function scope ends; this requires creation of the scope.
 // Nested calls in separate functions append to the held line.
 // The text for obvious reasons shouldn't have newlines and carriage returns; for efficiency purposes this is not checked.
-#define CONCLOG_SCOPE_PRINTHOLD(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().hold(CONCLOG_PRETTY_FUNCTION,logger_stream.str()); } }
+#define LOGGING_SCOPE_PRINTHOLD(text) { if (!Logger::instance().is_muted_at(0)) { std::ostringstream logger_stream; logger_stream << std::boolalpha << text; Logger::instance().hold(LOGGING_PRETTY_FUNCTION,logger_stream.str()); } }
 
-namespace ConcLog {
+namespace Logging {
 
 using OutputStream = std::ostream;
 template<class T> using SharedPointer = std::shared_ptr<T>;
@@ -369,6 +365,6 @@ class Logger {
     LoggerConfiguration _configuration;
 };
 
-} // namespace ConcLog
+} // namespace Logging
 
-#endif // CONCLOGGING_HPP
+#endif // LOGGINGGING_HPP

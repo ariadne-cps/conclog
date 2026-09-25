@@ -12,10 +12,10 @@
 #include <thread>
 #include <vector>
 
-#include "logging.hpp"
-#include "thread_registry_interface.hpp"
+#include "logging/logging.hpp"
+#include "logging/thread_registry_interface.hpp"
 
-using namespace ConcLog;
+using namespace Logging;
 
 class ConcurrentThreadRegistry : public ThreadRegistryInterface {
   public:
@@ -78,7 +78,7 @@ int main() {
             Logger::instance().register_self_thread("worker-" + std::to_string(i), 1);
             start_future.wait();
             for (unsigned int j=0; j<MESSAGES_PER_THREAD; ++j) {
-                CONCLOG_PRINTLN("message-" << j)
+                LOGGING_PRINTLN("message-" << j)
             }
             Logger::instance().unregister_thread(std::this_thread::get_id());
             registry.unregister_thread();
@@ -108,7 +108,7 @@ int main() {
             registry.register_thread();
             const std::string name = "reuse-" + std::to_string(i);
             Logger::instance().register_self_thread(name,1);
-            CONCLOG_PRINTLN("reuse-message")
+            LOGGING_PRINTLN("reuse-message")
             Logger::instance().unregister_thread(std::this_thread::get_id());
             registry.unregister_thread();
         });
@@ -135,7 +135,7 @@ int main() {
         Logger::instance().register_self_thread("config-producer",1);
         producer_started.store(true,std::memory_order_release);
         for (unsigned int i=0; i<CONFIG_MESSAGES; ++i) {
-            CONCLOG_PRINTLN("config-message-" << i << " true false + -")
+            LOGGING_PRINTLN("config-message-" << i << " true false + -")
         }
         Logger::instance().unregister_thread(std::this_thread::get_id());
         registry.unregister_thread();

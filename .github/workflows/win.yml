@@ -30,7 +30,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
-      run: cmake ${{runner.workspace}}/conclog
+      run: cmake ${{runner.workspace}}/logging
 
     - name: Build
       working-directory: ${{runner.workspace}}/build

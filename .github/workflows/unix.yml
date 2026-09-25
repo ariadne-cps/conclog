@@ -67,7 +67,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
-      run: cmake ${{runner.workspace}}/conclog -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=${{matrix.config.cxx}} -G Ninja
+      run: cmake ${{runner.workspace}}/logging -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=${{matrix.config.cxx}} -G Ninja
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
@@ -94,7 +94,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build-tsan
-      run: cmake ${{runner.workspace}}/conclog -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++-16 -DTHREAD_SANITIZER=ON -G Ninja
+      run: cmake ${{runner.workspace}}/logging -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++-16 -DTHREAD_SANITIZER=ON -G Ninja
 
     - name: Build
       working-directory: ${{runner.workspace}}/build-tsan

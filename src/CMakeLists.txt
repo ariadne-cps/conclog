@@ -1,3 +1,3 @@
-add_library(CONCLOG_SRC OBJECT
+add_library(LOGGING_SRC OBJECT
    logging.cpp
 )
