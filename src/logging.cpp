@@ -344,9 +344,6 @@ void ImmediateLoggerScheduler::decrease_level(unsigned int i) {
 }
 
 void ImmediateLoggerScheduler::println(unsigned int level_increase, std::string text) {
-#ifdef _WIN32
-    std::cerr << "[logging] Immediate::println enter" << std::endl;
-#endif
     Logger::instance()._println(LogRawMessage(std::string(), _current_level + level_increase, text));
 }
 
@@ -772,26 +769,11 @@ bool Logger::has_thread_registry_attached() const {
 }
 
 void Logger::use_immediate_scheduler() {
-#ifdef _WIN32
-    std::cerr << "[logging] use_immediate: lock" << std::endl;
-#endif
     std::unique_lock<std::shared_mutex> lock(_scheduler_mutex);
-#ifdef _WIN32
-    std::cerr << "[logging] use_immediate: registry" << std::endl;
-#endif
     if (not has_thread_registry_attached()) throw LoggerNoThreadRegistryException();
     if (_thread_registry->has_threads_registered()) throw LoggerSchedulerChangeWithRegisteredThreadsException();
-#ifdef _WIN32
-    std::cerr << "[logging] use_immediate: terminate" << std::endl;
-#endif
     _scheduler->terminate();
-#ifdef _WIN32
-    std::cerr << "[logging] use_immediate: reset" << std::endl;
-#endif
     _scheduler.reset(new ImmediateLoggerScheduler());
-#ifdef _WIN32
-    std::cerr << "[logging] use_immediate: done" << std::endl;
-#endif
 }
 
 void Logger::use_blocking_scheduler() {
@@ -889,9 +871,6 @@ std::string Logger::cached_last_printed_thread_name() const {
 }
 
 void Logger::println(unsigned int level_increase, std::string text) {
-#ifdef _WIN32
-    std::cerr << "[logging] Logger::println enter" << std::endl;
-#endif
     std::shared_lock<std::shared_mutex> lock(_scheduler_mutex);
     _scheduler->println(level_increase, text);
 }
@@ -1172,26 +1151,30 @@ void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) 
 
 void Logger::_println(LogRawMessage const& msg) {
 #ifdef _WIN32
-    std::cerr << "[logging] _println enter" << std::endl;
+    const bool trace_problem_print = (msg.text == "This is a call on level 1");
+    if (trace_problem_print) std::cerr << "[logging] target print: enter" << std::endl;
 #endif
     std::lock_guard<std::mutex> lock(_output_mutex);
 #ifdef _WIN32
-    std::cerr << "[logging] _println before largest_thread_name_size" << std::endl;
+    if (trace_problem_print) std::cerr << "[logging] target print: locked" << std::endl;
+#endif
+#ifdef _WIN32
+    if (trace_problem_print) std::cerr << "[logging] target print: before scheduler query" << std::endl;
 #endif
     const auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),msg.identifier.size());
 #ifdef _WIN32
-    std::cerr << "[logging] _println after largest_thread_name_size" << std::endl;
+    if (trace_problem_print) std::cerr << "[logging] target print: after scheduler query" << std::endl;
 #endif
     const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(largest_thread_name_size+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
 
 #ifdef _WIN32
-    std::cerr << "[logging] _println before preamble" << std::endl;
+    if (trace_problem_print) std::cerr << "[logging] target print: before preamble" << std::endl;
 #endif
     _print_preamble_for_firstline(msg.level,msg.identifier);
 #ifdef _WIN32
-    std::cerr << "[logging] _println after preamble" << std::endl;
+    if (trace_problem_print) std::cerr << "[logging] target print: after preamble" << std::endl;
 #endif
     std::string text = msg.text;
     if (configuration().discards_newlines_and_indentation()) text = _discard_newlines_and_indentation(text);
@@ -1208,7 +1191,13 @@ void Logger::_println(LogRawMessage const& msg) {
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.substr(0,newline_pos).size()));
                     text_ptr += newline_pos+1;
                 } else { // Text reaches the end of the terminal line
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: before themed output long" << std::endl;
+#endif
                     std::clog << _apply_theme(to_print);
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: after themed output long" << std::endl;
+#endif
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.size()));
                     text_ptr += max_columns-preamble_columns;
                 }
@@ -1232,9 +1221,21 @@ void Logger::_println(LogRawMessage const& msg) {
                     text_ptr += newline_pos+1;
                     _print_preamble_for_extralines(msg.level,msg.identifier.size());
                 } else { // Text reaches the end of the terminal line
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: before themed output final" << std::endl;
+#endif
                     std::clog << _apply_theme(to_print);
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: after themed output final" << std::endl;
+#endif
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.size()));
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: before newline" << std::endl;
+#endif
                     std::clog << '\n';
+#ifdef _WIN32
+                    if (trace_problem_print) std::cerr << "[logging] target print: after newline" << std::endl;
+#endif
                     if (_is_holding()) _print_held_line();
 
                     break;
