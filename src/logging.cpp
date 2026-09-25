@@ -735,6 +735,7 @@ OutputStream& operator<<(OutputStream& os, LoggerConfiguration const& c) {
 }
 
 Logger::Logger() :
+    _default_streambuf(std::clog.rdbuf()),
     _cached_num_held_columns(0), _cached_last_printed_level(0), _cached_last_printed_thread_name(std::string()),
     _scheduler(std::make_shared<NonblockingLoggerScheduler>()), _thread_registry(nullptr) { }
 
@@ -1040,58 +1041,13 @@ std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
 }
 
 void Logger::_print_preamble_for_firstline(unsigned int level, std::string thread_name) {
-#ifdef _WIN32
-    const bool trace_preamble = (level == 1 && thread_name.empty());
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before theme" << std::endl;
-#endif
     auto theme = _configuration.theme();
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after theme" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before can_print_thread_name" << std::endl;
-#endif
     bool can_print_thread_name = _can_print_thread_name();
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after can_print_thread_name" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before thread-name compare" << std::endl;
-#endif
     bool thread_name_changed = (_cached_last_printed_thread_name != thread_name);
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after thread-name compare" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before level compare" << std::endl;
-#endif
     bool level_changed = (_cached_last_printed_level != level);
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after level compare" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before print-level policy" << std::endl;
-#endif
     bool always_print_level = not(_configuration.prints_level_on_change_only());
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after print-level policy" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before scheduler size" << std::endl;
-#endif
     auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),thread_name.size());
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after scheduler size" << std::endl;
-#endif
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: before prefix" << std::endl;
-#endif
     std::string thread_name_prefix = std::string(largest_thread_name_size-thread_name.size(),' ');
-#ifdef _WIN32
-    std::cerr << "[logging] preamble: after prefix" << std::endl;
-#endif
 
     if (can_print_thread_name and _configuration.thread_name_printing_policy() == ThreadNamePrintingPolicy::BEFORE) {
         if (thread_name_changed) {
@@ -1100,41 +1056,11 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
         } else std::clog << std::string(largest_thread_name_size+1, ' ');
     }
 
-#ifdef _WIN32
-    if (trace_preamble) std::cerr << "[logging] preamble: before level output" << std::endl;
-#endif
     if ((can_print_thread_name and thread_name_changed) or always_print_level or level_changed) {
-        if (theme.level_number.is_styled()) {
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: styled level" << std::endl;
-#endif
-            auto level_style = theme.level_number();
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: level style built" << std::endl;
-#endif
-            std::clog << level_style;
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: level style written" << std::endl;
-#endif
-            std::clog << level;
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: level written" << std::endl;
-#endif
-            std::clog << TerminalTextStyle::RESET;
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: reset written" << std::endl;
-#endif
-        } else {
-#ifdef _WIN32
-            if (trace_preamble) std::cerr << "[logging] preamble: plain level" << std::endl;
-#endif
-            std::clog << level;
-        }
+        if (theme.level_number.is_styled()) std::clog << theme.level_number() << level << TerminalTextStyle::RESET;
+        else std::clog << level;
     } else std::clog << (level>9 ? "  " : " ");
 
-#ifdef _WIN32
-    if (trace_preamble) std::cerr << "[logging] preamble: after level output" << std::endl;
-#endif
     if (can_print_thread_name and _configuration.thread_name_printing_policy() == ThreadNamePrintingPolicy::AFTER) {
         if (thread_name_changed) {
             if (theme.at.is_styled()) std::clog << theme.at() << "@" << TerminalTextStyle::RESET << thread_name;
@@ -1142,9 +1068,6 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
         } else std::clog << std::string(largest_thread_name_size+1, ' ');
     }
 
-#ifdef _WIN32
-    if (trace_preamble) std::cerr << "[logging] preamble: before separator output" << std::endl;
-#endif
     if (not level_changed and _configuration.prints_level_on_change_only() and theme.level_hidden_separator.is_styled()) {
         std::clog << theme.level_hidden_separator() << "|" << TerminalTextStyle::RESET;
     } else if ((level_changed and theme.level_shown_separator.is_styled()) or not _configuration.prints_level_on_change_only()) {
@@ -1152,13 +1075,7 @@ void Logger::_print_preamble_for_firstline(unsigned int level, std::string threa
     } else {
         std::clog << "|";
     }
-#ifdef _WIN32
-    if (trace_preamble) std::cerr << "[logging] preamble: after separator output" << std::endl;
-#endif
     if (_configuration.indents_based_on_level()) std::clog << std::string(level, ' ');
-#ifdef _WIN32
-    if (trace_preamble) std::cerr << "[logging] preamble: done" << std::endl;
-#endif
 }
 
 void Logger::_print_preamble_for_extralines(unsigned int level, SizeType thread_name_size) {
@@ -1234,32 +1151,13 @@ void Logger::_cover_held_columns_with_whitespaces(unsigned int printed_columns) 
 }
 
 void Logger::_println(LogRawMessage const& msg) {
-#ifdef _WIN32
-    const bool trace_problem_print = (msg.text == "This is a call on level 1");
-    if (trace_problem_print) std::cerr << "[logging] target print: enter" << std::endl;
-#endif
     std::lock_guard<std::mutex> lock(_output_mutex);
-#ifdef _WIN32
-    if (trace_problem_print) std::cerr << "[logging] target print: locked" << std::endl;
-#endif
-#ifdef _WIN32
-    if (trace_problem_print) std::cerr << "[logging] target print: before scheduler query" << std::endl;
-#endif
     const auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),msg.identifier.size());
-#ifdef _WIN32
-    if (trace_problem_print) std::cerr << "[logging] target print: after scheduler query" << std::endl;
-#endif
     const unsigned int preamble_columns = (msg.level>9 ? 3:2)+(_can_print_thread_name() ? static_cast<unsigned int>(largest_thread_name_size+1) : 0)+msg.level;
     // If holding, we must write over the held line first
     if (_is_holding()) std::clog << '\r';
 
-#ifdef _WIN32
-    if (trace_problem_print) std::cerr << "[logging] target print: before preamble" << std::endl;
-#endif
     _print_preamble_for_firstline(msg.level,msg.identifier);
-#ifdef _WIN32
-    if (trace_problem_print) std::cerr << "[logging] target print: after preamble" << std::endl;
-#endif
     std::string text = msg.text;
     if (configuration().discards_newlines_and_indentation()) text = _discard_newlines_and_indentation(text);
     if (configuration().handles_multiline_output() and msg.text.size() > 0) {
@@ -1275,13 +1173,7 @@ void Logger::_println(LogRawMessage const& msg) {
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.substr(0,newline_pos).size()));
                     text_ptr += newline_pos+1;
                 } else { // Text reaches the end of the terminal line
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: before themed output long" << std::endl;
-#endif
                     std::clog << _apply_theme(to_print);
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: after themed output long" << std::endl;
-#endif
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.size()));
                     text_ptr += max_columns-preamble_columns;
                 }
@@ -1305,21 +1197,9 @@ void Logger::_println(LogRawMessage const& msg) {
                     text_ptr += newline_pos+1;
                     _print_preamble_for_extralines(msg.level,msg.identifier.size());
                 } else { // Text reaches the end of the terminal line
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: before themed output final" << std::endl;
-#endif
                     std::clog << _apply_theme(to_print);
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: after themed output final" << std::endl;
-#endif
                     _cover_held_columns_with_whitespaces(preamble_columns+static_cast<unsigned int>(to_print.size()));
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: before newline" << std::endl;
-#endif
                     std::clog << '\n';
-#ifdef _WIN32
-                    if (trace_problem_print) std::cerr << "[logging] target print: after newline" << std::endl;
-#endif
                     if (_is_holding()) _print_held_line();
 
                     break;

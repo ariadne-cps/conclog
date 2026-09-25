@@ -38,4 +38,4 @@ jobs:
 
     - name: Test
       working-directory: ${{runner.workspace}}/build
-      run: ctest -C ${{matrix.config.build-type}} -V
+      run: ctest -C ${{matrix.config.build-type}} --output-on-failure
