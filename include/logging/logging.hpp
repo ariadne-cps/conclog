@@ -22,8 +22,8 @@
  *  along with Logging.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGINGGING_HPP
-#define LOGGINGGING_HPP
+#ifndef LOGGING_LOGGING_HPP
+#define LOGGING_LOGGING_HPP
 
 #include <iostream>
 #include <fstream>
@@ -367,4 +367,4 @@ class Logger {
 
 } // namespace Logging
 
-#endif // LOGGINGGING_HPP
+#endif // LOGGING_LOGGING_HPP
