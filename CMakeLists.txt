@@ -2,12 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(Logging VERSION 1.0)
 
-option(COVERAGE "Enable coverage reporting" OFF)
 option(THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
-
-if(COVERAGE AND THREAD_SANITIZER)
-    message(FATAL_ERROR "COVERAGE and THREAD_SANITIZER cannot be enabled together.")
-endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules/configuration/cmake")
 include(ProjectOptions)
@@ -17,6 +12,18 @@ option(COVERAGE "Enable coverage reporting" OFF)
 
 enable_project_options()
 enable_project_coverage()
+
+if(COVERAGE AND THREAD_SANITIZER)
+    message(FATAL_ERROR "COVERAGE and THREAD_SANITIZER cannot be enabled together.")
+endif()
+
+if(THREAD_SANITIZER)
+    if(WIN32 OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "ThreadSanitizer is supported only with GCC or Clang on Unix-like systems.")
+    endif()
+    add_compile_options(-fsanitize=thread -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=thread)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.20)
