@@ -293,10 +293,7 @@ class Logger {
     Logger(Logger const&) = delete;
     void operator=(Logger const&) = delete;
 
-    static Logger& instance() {
-        static Logger instance;
-        return instance;
-    }
+    static Logger& instance();
 
     //! \brief Attach a thread registry, necessary to modify the scheduler and register/unregister
     void attach_thread_registry(ThreadRegistryInterface* registry);
