@@ -1040,13 +1040,55 @@ std::string Logger::_apply_theme_for_keywords(std::string const& text) const {
 }
 
 void Logger::_print_preamble_for_firstline(unsigned int level, std::string thread_name) {
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before theme" << std::endl;
+#endif
     auto theme = _configuration.theme();
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after theme" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before can_print_thread_name" << std::endl;
+#endif
     bool can_print_thread_name = _can_print_thread_name();
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after can_print_thread_name" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before thread-name compare" << std::endl;
+#endif
     bool thread_name_changed = (_cached_last_printed_thread_name != thread_name);
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after thread-name compare" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before level compare" << std::endl;
+#endif
     bool level_changed = (_cached_last_printed_level != level);
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after level compare" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before print-level policy" << std::endl;
+#endif
     bool always_print_level = not(_configuration.prints_level_on_change_only());
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after print-level policy" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before scheduler size" << std::endl;
+#endif
     auto largest_thread_name_size = std::max(_scheduler->largest_thread_name_size(),thread_name.size());
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after scheduler size" << std::endl;
+#endif
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: before prefix" << std::endl;
+#endif
     std::string thread_name_prefix = std::string(largest_thread_name_size-thread_name.size(),' ');
+#ifdef _WIN32
+    std::cerr << "[logging] preamble: after prefix" << std::endl;
+#endif
 
     if (can_print_thread_name and _configuration.thread_name_printing_policy() == ThreadNamePrintingPolicy::BEFORE) {
         if (thread_name_changed) {
