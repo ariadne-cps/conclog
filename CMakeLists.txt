@@ -2,7 +2,15 @@ cmake_minimum_required(VERSION 3.15)
 
 project(Logging VERSION 1.0)
 
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/submodules/configuration/cmake/ProjectOptions.cmake")
+    message(FATAL_ERROR
+        "Git submodules are not initialized. "
+        "Run 'git submodule update --init --recursive' before configuring the project.")
+endif()
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/submodules/configuration/cmake/ProjectOptions.cmake")
+
+require_initialized_submodules()
 
 option(THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 
