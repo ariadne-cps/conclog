@@ -22,8 +22,8 @@
  *  along with Logging.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGING_THREAD_REGISTRY_INTERFACE_HPP
-#define LOGGING_THREAD_REGISTRY_INTERFACE_HPP
+#ifndef ARIADNE_LOGGING_THREAD_REGISTRY_INTERFACE_HPP
+#define ARIADNE_LOGGING_THREAD_REGISTRY_INTERFACE_HPP
 
 namespace Ariadne::Logging {
 
@@ -36,4 +36,4 @@ class ThreadRegistryInterface {
 
 } // namespace Ariadne::Logging
 
-#endif // LOGGING_THREAD_REGISTRY_INTERFACE_HPP
+#endif // ARIADNE_LOGGING_THREAD_REGISTRY_INTERFACE_HPP

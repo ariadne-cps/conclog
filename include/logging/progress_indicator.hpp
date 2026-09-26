@@ -22,8 +22,8 @@
  *  along with Logging.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGING_PROGRESS_INDICATOR_HPP
-#define LOGGING_PROGRESS_INDICATOR_HPP
+#ifndef ARIADNE_LOGGING_PROGRESS_INDICATOR_HPP
+#define ARIADNE_LOGGING_PROGRESS_INDICATOR_HPP
 
 #include <cmath>
 
@@ -47,4 +47,4 @@ class ProgressIndicator {
 
 } // namespace Ariadne::Logging
 
-#endif // LOGGING_PROGRESS_INDICATOR_HPP
+#endif // ARIADNE_LOGGING_PROGRESS_INDICATOR_HPP

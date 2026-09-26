@@ -22,8 +22,8 @@
  *  along with Logging.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGING_LOGGING_HPP
-#define LOGGING_LOGGING_HPP
+#ifndef ARIADNE_LOGGING_LOGGING_HPP
+#define ARIADNE_LOGGING_LOGGING_HPP
 
 #include <iostream>
 #include <fstream>
@@ -364,4 +364,4 @@ class Logger {
 
 } // namespace Ariadne::Logging
 
-#endif // LOGGING_LOGGING_HPP
+#endif // ARIADNE_LOGGING_LOGGING_HPP
