@@ -6,7 +6,7 @@
  ****************************************************************************/
 
 /*
- *  This file is part of Logging.
+ *  This file is part of Ariadne Logging.
  *
  *  Logging is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

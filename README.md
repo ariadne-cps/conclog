@@ -1,6 +1,6 @@
 
 
-# Logging
+# Ariadne Logging
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Unix Status](https://github.com/ariadne-cps/logging/workflows/Unix/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/unix.yml)
 [![Windows Status](https://github.com/ariadne-cps/logging/workflows/Windows/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/windows.yml) [![Coverage Status](https://github.com/ariadne-cps/logging/workflows/Coverage/badge.svg)](https://github.com/ariadne-cps/logging/actions/workflows/coverage.yml) [![codecov](https://codecov.io/gh/ariadne-cps/logging/branch/main/graph/badge.svg)](https://codecov.io/gh/ariadne-cps/logging)
